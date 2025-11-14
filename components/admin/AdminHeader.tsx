@@ -19,9 +19,6 @@ const tabs = [
   { name: 'Settings', href: '/admin/settings' },
   { name: 'Team', href: '/admin/team' },
   { name: 'Crawler', href: '/admin/crawler' },
-  { name: 'Create', href: '/admin/create' },
-  { name: 'Key Facts', href: '/admin/key-facts' },
-  { name: 'Feedback', href: '/admin/feedback' },
   { name: 'Web Integration', href: '/admin/web-integration' },
 ];
 
