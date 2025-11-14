@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from 'react';
-import { ChevronDown, ChevronRight, Search, Download } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight, Search, Download, User, Bot } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
+import { createClient } from '@/lib/supabase';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  created_at: string;
+}
 
 interface Chat {
   id: string;
@@ -125,11 +133,44 @@ export default function ChatsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [chats, setChats] = useState<Chat[]>(sampleChats);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>({});
+  const [loadingMessages, setLoadingMessages] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
   const totalChats = 1200;
   const totalMessages = 1300;
+
+  const fetchMessages = async (chatId: string) => {
+    // Don't fetch if already loaded
+    if (chatMessages[chatId]) return;
+
+    setLoadingMessages(prev => new Set(prev).add(chatId));
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('chat_id', chatId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      setChatMessages(prev => ({
+        ...prev,
+        [chatId]: data || []
+      }));
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setLoadingMessages(prev => {
+        const next = new Set(prev);
+        next.delete(chatId);
+        return next;
+      });
+    }
+  };
 
   const toggleRow = (chatId: string) => {
     const newExpanded = new Set(expandedRows);
@@ -137,6 +178,7 @@ export default function ChatsPage() {
       newExpanded.delete(chatId);
     } else {
       newExpanded.add(chatId);
+      fetchMessages(chatId);
     }
     setExpandedRows(newExpanded);
   };
@@ -232,44 +274,105 @@ export default function ChatsPage() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {displayedChats.map((chat, index) => (
-                <tr
-                  key={chat.id}
-                  className="hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => toggleRow(chat.id)}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button className="text-gray-400 hover:text-gray-600">
-                      {expandedRows.has(chat.id) ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded bg-gray-100 text-xs">
-                        {chat.messages}
+                <>
+                  <tr
+                    key={chat.id}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => toggleRow(chat.chatId)}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button className="text-gray-400 hover:text-gray-600">
+                        {expandedRows.has(chat.chatId) ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded bg-gray-100 text-xs">
+                          {chat.messages}
+                        </span>
+                        {chat.chatId}
                       </span>
-                      {chat.chatId}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {chat.location}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 max-w-md">
-                    <p className="line-clamp-2">{chat.topicSummary}</p>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {chat.userSat}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {chat.intent}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {chat.time}
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {chat.location}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-md">
+                      <p className="line-clamp-2">{chat.topicSummary}</p>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {chat.userSat}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {chat.intent}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {chat.time}
+                    </td>
+                  </tr>
+
+                  {/* Expanded Row - Chat Transcript */}
+                  {expandedRows.has(chat.chatId) && (
+                    <tr key={`${chat.id}-expanded`}>
+                      <td colSpan={7} className="px-6 py-6 bg-gray-50">
+                        <div className="max-w-4xl">
+                          <h3 className="text-sm font-semibold text-gray-900 mb-4">Chat Transcript</h3>
+
+                          {loadingMessages.has(chat.chatId) ? (
+                            <div className="flex items-center justify-center py-8">
+                              <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+                            </div>
+                          ) : chatMessages[chat.chatId]?.length > 0 ? (
+                            <div className="space-y-4">
+                              {chatMessages[chat.chatId].map((message, idx) => (
+                                <div
+                                  key={message.id || idx}
+                                  className={`flex gap-3 ${
+                                    message.role === 'user' ? 'justify-start' : 'justify-start'
+                                  }`}
+                                >
+                                  <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${
+                                    message.role === 'user'
+                                      ? 'bg-blue-100 text-blue-600'
+                                      : 'bg-gray-800 text-white'
+                                  }`}>
+                                    {message.role === 'user' ? (
+                                      <User className="h-4 w-4" />
+                                    ) : (
+                                      <Bot className="h-4 w-4" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs font-medium text-gray-900">
+                                        {message.role === 'user' ? 'User' : 'Assistant'}
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(message.created_at).toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <div className={`rounded-lg px-4 py-3 text-sm ${
+                                      message.role === 'user'
+                                        ? 'bg-white border border-gray-200'
+                                        : 'bg-white border border-gray-200'
+                                    }`}>
+                                      <p className="text-gray-900 whitespace-pre-wrap">{message.content}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500 text-center py-8">No messages found for this chat.</p>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>
