@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main sparkle star -->
+  <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" 
+        fill="url(#blueGradient)" 
+        stroke="#2563eb" 
+        stroke-width="0.5"/>
+  
+  <!-- Small sparkle line (top right) -->
+  <path d="M20 2v4" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <path d="M22 4h-4" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Small circle sparkle (bottom left) -->
+  <circle cx="4" cy="20" r="2" fill="#3b82f6"/>
+</svg>
+
