@@ -1,0 +1,116 @@
+"use client";
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  LayoutDashboard,
+  Users,
+  Mail,
+  FileText,
+  BarChart3,
+  Settings,
+  HelpCircle,
+  Rocket,
+  Zap
+} from 'lucide-react';
+
+const navigation = [
+  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { name: 'Users', href: '/admin/users', icon: Users },
+  { name: 'Saved', href: '/admin/saved', icon: Mail },
+  { name: 'Plans', href: '/admin/plans', icon: FileText },
+  { name: 'Updates', href: '/admin/updates', icon: Zap },
+];
+
+const secondaryNavigation = [
+  { name: 'Integrations', href: '/admin/integrations', icon: Rocket },
+  { name: 'Create', href: '/admin/create', icon: BarChart3 },
+];
+
+const bottomNavigation = [
+  { name: 'Settings', href: '/admin/settings', icon: Settings },
+  { name: 'Help', href: '/admin/help', icon: HelpCircle },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+
+  return (
+    <div className="flex h-screen w-64 flex-col bg-white border-r border-gray-200">
+      {/* Logo */}
+      <div className="flex h-16 items-center px-6 border-b border-gray-200">
+        <Link href="/admin" className="flex items-center gap-2">
+          <div className="text-2xl">🏢</div>
+          <span className="text-xl font-bold text-gray-900">Horizon CRM</span>
+        </Link>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <div className="space-y-1">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.name}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="mt-8 space-y-1">
+          {secondaryNavigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.name}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Bottom Navigation */}
+      <div className="border-t border-gray-200 px-3 py-4">
+        <div className="space-y-1">
+          {bottomNavigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.name}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
