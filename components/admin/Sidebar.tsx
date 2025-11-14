@@ -11,11 +11,13 @@ import {
   Settings,
   HelpCircle,
   Rocket,
-  Zap
+  Zap,
+  MessageSquare
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { name: 'Chats', href: '/admin/chats', icon: MessageSquare },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Saved', href: '/admin/saved', icon: Mail },
   { name: 'Plans', href: '/admin/plans', icon: FileText },
