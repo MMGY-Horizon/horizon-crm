@@ -13,23 +13,23 @@ export default function WebIntegrationPage() {
     setTimeout(() => setCopiedSection(null), 2000);
   };
 
-  const htmlOverlaySnippet = `<!-- Mindtrip Chat -->
-<div id="mindtrip-chat"></div>
+  const htmlOverlaySnippet = `<!-- Horizon Chat -->
+<div id="horizon-chat"></div>
 <script src="https://tripbuilder.ai/widget.js" defer></script>
 <script>
-  window.MindrripConfig = {
+  window.HorizonConfig = {
     orgSlug: "truckee-laketahoe"
   };
 </script>`;
 
   const disclaimerSnippet = `<a href="https://mindtrip.ai/chat" id="powered-by-Modglip-org-check-important-info">Info</a>`;
 
-  const openChatSnippet = `<a href="javascript:void(0)" onclick="window.Mindtrip?.openChat()">
+  const openChatSnippet = `<a href="javascript:void(0)" onclick="window.Horizon?.openChat()">
   Start the overlay to let a user view a message window and new user consent. You must provide on your TOS
   the link to which to chat to give info for chat & private rights requested.
 </a>`;
 
-  const aiSearchSnippet = `<a href="javascript:void(0)" onclick="window.Mindtrip?.openChat({
+  const aiSearchSnippet = `<a href="javascript:void(0)" onclick="window.Horizon?.openChat({
   userInput: 'Your query goes here',
   context: {autoSearch: true},
   onClose: () => {console.log('Chat closed')}
@@ -37,7 +37,7 @@ export default function WebIntegrationPage() {
   Search with AI
 </a>`;
 
-  const samplePromptSnippet = `<a href="javascript:void(0)" onclick="window.Mindtrip?.openChat({
+  const samplePromptSnippet = `<a href="javascript:void(0)" onclick="window.Horizon?.openChat({
   promptExample: true
 })">
   Show Sample Prompts
@@ -433,12 +433,12 @@ export default function WebIntegrationPage() {
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Example:</h3>
             <pre className="text-sm text-gray-800 overflow-x-auto bg-gray-50 p-4 rounded">
               <code>{`window.addEventListener('load', () => {
-  if (window.Mindtrip) {
-    window.Mindtrip.onLoad = () => {
+  if (window.Horizon) {
+    window.Horizon.onLoad = () => {
       console.log('Trip Planner loaded!');
     };
     
-    window.Mindtrip.onChange = (status) => {
+    window.Horizon.onChange = (status) => {
       console.log('Status:', status);
     };
   }
@@ -449,14 +449,14 @@ export default function WebIntegrationPage() {
           <div className="mt-4 bg-white rounded-lg border border-gray-200 p-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">initClient</h3>
             <pre className="text-sm text-gray-800 overflow-x-auto bg-gray-50 p-4 rounded">
-              <code>{`window.Mindtrip.initClient({buttonMode: 'tip-button'});`}</code>
+              <code>{`window.Horizon.initClient({buttonMode: 'tip-button'});`}</code>
             </pre>
           </div>
 
           <div className="mt-4 bg-white rounded-lg border border-gray-200 p-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">isMobile</h3>
             <pre className="text-sm text-gray-800 overflow-x-auto bg-gray-50 p-4 rounded">
-              <code>{`window.Mindtrip.isMobile()`}</code>
+              <code>{`window.Horizon.isMobile()`}</code>
             </pre>
           </div>
         </section>

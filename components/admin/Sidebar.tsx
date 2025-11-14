@@ -10,7 +10,8 @@ import {
   Settings,
   UsersRound,
   Globe,
-  Search
+  Search,
+  Sparkles
 } from 'lucide-react';
 
 const navigation = [
@@ -35,7 +36,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center px-6 border-b border-gray-200">
         <Link href="/admin" className="flex items-center gap-2">
-          <div className="text-2xl">🏢</div>
+          <Sparkles className="h-6 w-6 text-blue-600" />
           <span className="text-xl font-bold text-gray-900">Horizon CRM</span>
         </Link>
       </div>
