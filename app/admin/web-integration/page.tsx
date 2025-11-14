@@ -18,7 +18,7 @@ export default function WebIntegrationPage() {
 <script src="https://tripbuilder.ai/widget.js" defer></script>
 <script>
   window.HorizonConfig = {
-    orgSlug: "truckee-laketahoe"
+    orgSlug: "visit-fort-myers"
   };
 </script>`;
 
@@ -45,7 +45,7 @@ export default function WebIntegrationPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminHeader title="Web Integration" subtitle="Truckee-Tahoe • Live since August 2024" showDateRange={false} />
+      <AdminHeader title="Web Integration" subtitle="Visit Fort Myers • Live since August 2024" showDateRange={false} />
 
       <div className="max-w-5xl mx-auto p-8 space-y-8">
         {/* Chat Overlay Section */}
@@ -281,7 +281,7 @@ export default function WebIntegrationPage() {
               <div className="bg-gray-50 rounded p-3">
                 <code className="text-sm text-gray-800">
                   <a
-                    href="https://tripbuilder.ai/chat?slug=truckee-laketahoe&q=What%20are%20fun%20things%20to%20do"
+                    href="https://tripbuilder.ai/chat?slug=visit-fort-myers&q=What%20are%20fun%20things%20to%20do"
                     className="text-blue-600"
                   >
                     Link
@@ -301,7 +301,7 @@ export default function WebIntegrationPage() {
               </p>
               <div className="bg-gray-50 rounded p-3">
                 <code className="text-sm text-gray-800">
-                  <a href="https://tripbuilder.ai/chat?slug=truckee-laketahoe?id=123abc" className="text-blue-600">
+                  <a href="https://tripbuilder.ai/chat?slug=visit-fort-myers?id=123abc" className="text-blue-600">
                     Link
                   </a>
                 </code>
@@ -316,7 +316,7 @@ export default function WebIntegrationPage() {
               <div className="bg-gray-50 rounded p-3">
                 <code className="text-sm text-gray-800">
                   <a
-                    href="https://tripbuilder.ai/chat?slug=truckee-laketahoe&place=ChIJo8dI4kQH_U4ReI93KOCY_E0&name=Donner+Lake"
+                    href="https://tripbuilder.ai/chat?slug=visit-fort-myers&place=ChIJo8dI4kQH_U4ReI93KOCY_E0&name=Donner+Lake"
                     className="text-blue-600"
                   >
                     Link

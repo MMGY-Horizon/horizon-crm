@@ -77,7 +77,7 @@ export default function PlacesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <AdminHeader title="Places" subtitle="Truckee-Tahoe • Live since August 2024" />
+      <AdminHeader title="Places" subtitle="Visit Fort Myers • Live since August 2024" />
 
       {/* Main Content */}
       <div className="p-8">

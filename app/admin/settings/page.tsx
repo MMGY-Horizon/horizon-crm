@@ -16,7 +16,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminHeader title="Settings" subtitle="Truckee-Tahoe • Live since August 2024" />
+      <AdminHeader title="Settings" subtitle="Visit Fort Myers • Live since August 2024" />
 
       <div className="max-w-4xl mx-auto p-8">
         {/* Account Section */}
@@ -35,7 +35,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                value="truckee-laketahoe"
+                value="visit-fort-myers"
                 disabled
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
               />
@@ -47,7 +47,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                defaultValue="Truckee-Tahoe"
+                defaultValue="Visit Fort Myers"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -58,7 +58,7 @@ export default function SettingsPage() {
               </label>
               <textarea
                 rows={3}
-                defaultValue="Truckee, North Lake Tahoe, Carnelian Bay, Tahoe City, Kings Beach, Grays, Valley, Tahoe Vista, Soda Springs"
+                defaultValue="Fort Myers, Fort Myers Beach, Sanibel Island, Captiva Island, Cape Coral, Estero, Bonita Springs"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -166,7 +166,7 @@ export default function SettingsPage() {
               </p>
               <input
                 type="text"
-                placeholder="What do you want to know about Truckee-Tahoe?"
+                placeholder="What do you want to know about Fort Myers?"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -180,10 +180,10 @@ export default function SettingsPage() {
               </p>
               <textarea
                 rows={4}
-                defaultValue={`What are some family-friendly attractions in Truckee-Tahoe?
-Name a few high-end dining spots in Truckee-Tahoe
-Where are all the best ways to experience the outdoors?
-Tell me the best places to stay in Truckee with my dog.`}
+                defaultValue={`What are some family-friendly attractions in Fort Myers?
+Name a few high-end dining spots in Fort Myers
+Where are the best beaches?
+Tell me the best places to stay in Fort Myers with my dog.`}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
               />
             </div>
@@ -211,7 +211,7 @@ Tell me the best places to stay in Truckee with my dog.`}
               </p>
               <input
                 type="text"
-                defaultValue="Ask me anything about Truckee-Tahoe..."
+                defaultValue="Ask me anything about Fort Myers..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -258,7 +258,7 @@ Tell me the best places to stay in Truckee with my dog.`}
               </p>
               <input
                 type="text"
-                defaultValue="Truckee"
+                defaultValue="Fort Myers"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -272,7 +272,7 @@ Tell me the best places to stay in Truckee with my dog.`}
               </p>
               <input
                 type="text"
-                defaultValue="Truckee"
+                defaultValue="Fort Myers"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -448,7 +448,7 @@ Tell me the best places to stay in Truckee with my dog.`}
                 "Stop subscrib​ing/updates label"
                 <br />
                 <span className="text-xs text-gray-500">
-                  Subscribed to the Truckee-Tahoe newsletter
+                  Subscribed to the Visit Fort Myers newsletter
                 </span>
               </span>
             </div>

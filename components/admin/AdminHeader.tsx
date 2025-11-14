@@ -11,7 +11,7 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({ 
   title = "Organization Admin", 
-  subtitle = "Truckee-Tahoe • Live since August 2024",
+  subtitle = "Visit Fort Myers • Live since August 2024",
   showDateRange = true 
 }: AdminHeaderProps) {
   const [dateRange] = useState('Last 30 days');
