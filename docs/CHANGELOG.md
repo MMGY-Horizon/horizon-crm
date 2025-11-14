@@ -188,3 +188,4 @@ GROUP BY c.id;
 - [ ] Add OpenTelemetry for distributed tracing
 - [ ] Create audit log table for tracking changes
 
+

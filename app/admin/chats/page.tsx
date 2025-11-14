@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Search, Download, User, Bot } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
-import { createClient } from '@/lib/supabase';
 
 interface Message {
   id: string;
@@ -14,132 +13,50 @@ interface Message {
 
 interface Chat {
   id: string;
-  chatId: string;
-  location: string;
-  topicSummary: string;
-  userSat: number | string;
-  intent: string;
-  time: string;
-  messages: number;
-  expanded?: boolean;
+  chat_id: string;
+  session_id: string;
+  location: string | null;
+  status: string;
+  metadata: any;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
 }
-
-// Sample chat data
-const sampleChats: Chat[] = [
-  {
-    id: '1',
-    chatId: '3312211',
-    location: 'Rocklin, CA, US',
-    topicSummary: 'Pending...',
-    userSat: 'Pending',
-    intent: 'Pending',
-    time: 'Nov 14, 2025, 8:27 AM',
-    messages: 2
-  },
-  {
-    id: '2',
-    chatId: '3310348',
-    location: 'Fremont, CA, US',
-    topicSummary: 'Romantic couples itinerary in Truckee with secluded trails, intimate restaurants, scenic drives, lakeside picnics, and stargazing.',
-    userSat: 5,
-    intent: 'Itinerary',
-    time: 'Nov 14, 2025, 6:32 AM',
-    messages: 2
-  },
-  {
-    id: '3',
-    chatId: '3310242',
-    location: 'Los Angeles, CA, US',
-    topicSummary: 'Adventure itinerary ideas in Truckee-Tahoe, California, with Spanish language support',
-    userSat: 5,
-    intent: 'Itinerary',
-    time: 'Nov 14, 2025, 6:24 AM',
-    messages: 2
-  },
-  {
-    id: '4',
-    chatId: '3307538',
-    location: 'Lodi, CA, US',
-    topicSummary: 'Romantic couples itinerary in Truckee with secluded trails, intimate dining, scenic drives, lakeside picnics, and stargazing',
-    userSat: 5,
-    intent: 'Itinerary',
-    time: 'Nov 14, 2025, 2:47 AM',
-    messages: 2
-  },
-  {
-    id: '5',
-    chatId: '3306787',
-    location: 'San Jose, CA, US',
-    topicSummary: 'Family-friendly Truckee itinerary with Thanksgiving week activity and dining suggestions',
-    userSat: 5,
-    intent: 'Itinerary',
-    time: 'Nov 14, 2025, 1:43 AM',
-    messages: 6
-  },
-  {
-    id: '6',
-    chatId: '3305125',
-    location: 'Seattle, WA, US',
-    topicSummary: 'Relaxing Truckee itinerary with scenic drives, lakeside walks, cozy cafes, gentle trails, and sunset spots',
-    userSat: 5,
-    intent: 'Itinerary',
-    time: 'Nov 13, 2025, 10:48 PM',
-    messages: 2
-  },
-  {
-    id: '7',
-    chatId: '3304577',
-    location: 'Vineyard, CA, US',
-    topicSummary: 'Family-friendly Truckee itinerary with trails, beaches, bike rentals, casual dining, and playgrounds',
-    userSat: 5,
-    intent: 'Itinerary',
-    time: 'Nov 13, 2025, 9:54 PM',
-    messages: 2
-  },
-  {
-    id: '8',
-    chatId: '3303672',
-    location: 'Anderson, CA, US',
-    topicSummary: 'Romantic couples itinerary in Truckee with secluded nature, intimate dining, scenic drives, lakeside picnics, and stargazing',
-    userSat: 5,
-    intent: 'Itinerary',
-    time: 'Nov 13, 2025, 8:06 PM',
-    messages: 2
-  },
-  {
-    id: '9',
-    chatId: '3303209',
-    location: 'Lodi, CA, US',
-    topicSummary: 'Romantic couples itinerary in Truckee with secluded outdoor experiences, intimate dining, scenic drives, lakeside picnics, and stargazing.',
-    userSat: 5,
-    intent: 'Itinerary',
-    time: 'Nov 13, 2025, 7:28 PM',
-    messages: 2
-  },
-  {
-    id: '10',
-    chatId: '3302940',
-    location: 'Lodi, CA, US',
-    topicSummary: 'Romantic couples itinerary in Truckee with secluded trails, intimate dining, scenic drives, lakeside picnics, and stargazing',
-    userSat: 5,
-    intent: 'Itinerary',
-    time: 'Nov 13, 2025, 7:07 PM',
-    messages: 2
-  },
-];
 
 export default function ChatsPage() {
   const [dateRange, setDateRange] = useState('Last 30 days');
   const [searchQuery, setSearchQuery] = useState('');
-  const [chats, setChats] = useState<Chat[]>(sampleChats);
+  const [chats, setChats] = useState<Chat[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>({});
   const [loadingMessages, setLoadingMessages] = useState<Set<string>>(new Set());
+  const [loadingChats, setLoadingChats] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  const totalChats = 1200;
-  const totalMessages = 1300;
+  // Fetch chats from API
+  useEffect(() => {
+    const fetchChats = async () => {
+      try {
+        setLoadingChats(true);
+        const response = await fetch('/api/chats');
+        if (!response.ok) {
+          throw new Error('Failed to fetch chats');
+        }
+        const data = await response.json();
+        setChats(data);
+      } catch (error) {
+        console.error('Error fetching chats:', error);
+      } finally {
+        setLoadingChats(false);
+      }
+    };
+
+    fetchChats();
+  }, []);
+
+  const totalChats = chats.length;
+  const totalMessages = chats.reduce((sum, chat) => sum + chat.message_count, 0);
 
   const fetchMessages = async (chatId: string) => {
     // Don't fetch if already loaded
@@ -148,14 +65,13 @@ export default function ChatsPage() {
     setLoadingMessages(prev => new Set(prev).add(chatId));
 
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('chat_id', chatId)
-        .order('created_at', { ascending: true });
+      const response = await fetch(`/api/chats/${chatId}/messages`);
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to fetch messages');
+      }
+
+      const data = await response.json();
 
       setChatMessages(prev => ({
         ...prev,
@@ -183,11 +99,15 @@ export default function ChatsPage() {
     setExpandedRows(newExpanded);
   };
 
-  const filteredChats = chats.filter(chat =>
-    chat.chatId.includes(searchQuery) ||
-    chat.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.topicSummary.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredChats = chats.filter(chat => {
+    const query = searchQuery.toLowerCase();
+    return (
+      chat.chat_id.toLowerCase().includes(query) ||
+      (chat.location?.toLowerCase() || '').includes(query) ||
+      (chat.metadata?.topic_summary?.toLowerCase() || '').includes(query) ||
+      chat.session_id.toLowerCase().includes(query)
+    );
+  });
 
   const totalPages = Math.ceil(filteredChats.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -262,10 +182,7 @@ export default function ChatsPage() {
                   Short Topic Summary
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User Sat. Est.
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Intent
+                  Score (1-5)
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Time (PT)
@@ -273,16 +190,30 @@ export default function ChatsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {displayedChats.map((chat, index) => (
-                <>
+              {loadingChats ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-20 text-center">
+                    <div className="flex items-center justify-center">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+                    </div>
+                    <p className="mt-4 text-sm text-gray-500">Loading chats...</p>
+                  </td>
+                </tr>
+              ) : displayedChats.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-20 text-center text-sm text-gray-500">
+                    No chats found. {searchQuery && 'Try adjusting your search.'}
+                  </td>
+                </tr>
+              ) : displayedChats.map((chat, index) => (
+                <React.Fragment key={chat.id}>
                   <tr
-                    key={chat.id}
                     className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => toggleRow(chat.chatId)}
+                    onClick={() => toggleRow(chat.chat_id)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button className="text-gray-400 hover:text-gray-600">
-                        {expandedRows.has(chat.chatId) ? (
+                        {expandedRows.has(chat.chat_id) ? (
                           <ChevronDown className="h-4 w-4" />
                         ) : (
                           <ChevronRight className="h-4 w-4" />
@@ -292,42 +223,46 @@ export default function ChatsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900 flex items-center gap-2">
                         <span className="flex h-6 w-6 items-center justify-center rounded bg-gray-100 text-xs">
-                          {chat.messages}
+                          {chat.message_count}
                         </span>
-                        {chat.chatId}
+                        {chat.chat_id}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {chat.location}
+                      {chat.location || 'N/A'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-md">
-                      <p className="line-clamp-2">{chat.topicSummary}</p>
+                      <p className="line-clamp-2">{chat.metadata?.topic_summary || 'Pending...'}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {chat.userSat}
+                      {chat.metadata?.user_score || 'Pending'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {chat.intent}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {chat.time}
+                      {new Date(chat.created_at).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
                     </td>
                   </tr>
 
                   {/* Expanded Row - Chat Transcript */}
-                  {expandedRows.has(chat.chatId) && (
+                  {expandedRows.has(chat.chat_id) && (
                     <tr key={`${chat.id}-expanded`}>
-                      <td colSpan={7} className="px-6 py-6 bg-gray-50">
+                      <td colSpan={6} className="px-6 py-6 bg-gray-50">
                         <div className="max-w-4xl">
                           <h3 className="text-sm font-semibold text-gray-900 mb-4">Chat Transcript</h3>
 
-                          {loadingMessages.has(chat.chatId) ? (
+                          {loadingMessages.has(chat.chat_id) ? (
                             <div className="flex items-center justify-center py-8">
                               <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
                             </div>
-                          ) : chatMessages[chat.chatId]?.length > 0 ? (
+                          ) : chatMessages[chat.chat_id]?.length > 0 ? (
                             <div className="space-y-4">
-                              {chatMessages[chat.chatId].map((message, idx) => (
+                              {chatMessages[chat.chat_id].map((message, idx) => (
                                 <div
                                   key={message.id || idx}
                                   className={`flex gap-3 ${
@@ -372,7 +307,7 @@ export default function ChatsPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </tbody>
           </table>
