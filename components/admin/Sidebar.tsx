@@ -18,10 +18,13 @@ const navigation = [
   { name: 'Chats', href: '/admin/chats', icon: MessageSquare },
   { name: 'Places', href: '/admin/places', icon: MapPin },
   { name: 'Users', href: '/admin/users', icon: Users },
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
   { name: 'Team', href: '/admin/team', icon: UsersRound },
   { name: 'Crawler', href: '/admin/crawler', icon: Search },
   { name: 'Web Integration', href: '/admin/web-integration', icon: Globe },
+];
+
+const bottomNavigation = [
+  { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -59,6 +62,29 @@ export default function Sidebar() {
           })}
         </div>
       </nav>
+
+      {/* Bottom Navigation */}
+      <div className="border-t border-gray-200 px-3 py-4">
+        <div className="space-y-1">
+          {bottomNavigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.name}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
