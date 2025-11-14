@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard,
   Users,
@@ -11,7 +12,8 @@ import {
   UsersRound,
   Globe,
   Search,
-  Sparkles
+  Sparkles,
+  LogOut
 } from 'lucide-react';
 
 const navigation = [
@@ -30,6 +32,7 @@ const bottomNavigation = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   return (
     <div className="flex h-screen w-64 flex-col bg-white border-r border-gray-200">
@@ -86,6 +89,36 @@ export default function Sidebar() {
           })}
         </div>
       </div>
+
+      {/* User Profile */}
+      {session?.user && (
+        <div className="border-t border-gray-200 px-3 py-4">
+          <div className="flex items-center gap-3 px-3 py-2">
+            {session.user.image && (
+              <img
+                src={session.user.image}
+                alt={session.user.name || ''}
+                className="h-8 w-8 rounded-full"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {session.user.name}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {session.user.email}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors mt-2 cursor-pointer"
+          >
+            <LogOut className="h-5 w-5" />
+            Sign out
+          </button>
+        </div>
+      )}
     </div>
   );
 }
