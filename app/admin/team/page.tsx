@@ -68,7 +68,7 @@ export default function TeamPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminHeader subtitle="Truckee-Tahoe • Live since August 2024" />
+      <AdminHeader title="Team" subtitle="Truckee-Tahoe • Live since August 2024" />
 
       <div className="p-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-8">Team Members</h2>

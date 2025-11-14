@@ -45,7 +45,7 @@ export default function WebIntegrationPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminHeader subtitle="Truckee-Tahoe • Live since August 2024" showDateRange={false} />
+      <AdminHeader title="Web Integration" subtitle="Truckee-Tahoe • Live since August 2024" showDateRange={false} />
 
       <div className="max-w-5xl mx-auto p-8 space-y-8">
         {/* Chat Overlay Section */}
