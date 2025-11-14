@@ -53,6 +53,14 @@ export default function PlacesPage() {
   const totalFeatured = 36;
   const totalHandoffs = 43;
 
+  // Format number with K only if >= 1000
+  const formatCount = (count: number): string => {
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}K`;
+    }
+    return count.toString();
+  };
+
   const filteredPlaces = places.filter(place => {
     const matchesSearch = place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          place.where.toLowerCase().includes(searchQuery.toLowerCase());
@@ -110,15 +118,15 @@ export default function PlacesPage() {
         {/* Stats */}
         <div className="mb-6 flex items-center gap-8">
           <div>
-            <p className="text-3xl font-bold text-gray-900">{(totalMentioned / 1000).toFixed(1)}K</p>
+            <p className="text-3xl font-bold text-gray-900">{formatCount(totalMentioned)}</p>
             <p className="text-sm text-gray-600">Mentioned</p>
           </div>
           <div>
-            <p className="text-3xl font-bold text-gray-900">{totalFeatured}</p>
+            <p className="text-3xl font-bold text-gray-900">{formatCount(totalFeatured)}</p>
             <p className="text-sm text-gray-600">Featured</p>
           </div>
           <div>
-            <p className="text-3xl font-bold text-gray-900">{totalHandoffs}</p>
+            <p className="text-3xl font-bold text-gray-900">{formatCount(totalHandoffs)}</p>
             <p className="text-sm text-gray-600">Handoffs</p>
           </div>
           <div className="ml-auto">

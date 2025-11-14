@@ -58,6 +58,14 @@ export default function ChatsPage() {
   const totalChats = chats.length;
   const totalMessages = chats.reduce((sum, chat) => sum + chat.message_count, 0);
 
+  // Format number with K only if >= 1000
+  const formatCount = (count: number): string => {
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}K`;
+    }
+    return count.toString();
+  };
+
   const fetchMessages = async (chatId: string) => {
     // Don't fetch if already loaded
     if (chatMessages[chatId]) return;
@@ -147,11 +155,11 @@ export default function ChatsPage() {
         {/* Stats */}
         <div className="mb-6 flex items-center gap-8">
           <div>
-            <p className="text-3xl font-bold text-gray-900">{(totalChats / 1000).toFixed(1)}K</p>
+            <p className="text-3xl font-bold text-gray-900">{formatCount(totalChats)}</p>
             <p className="text-sm text-gray-600">Chats</p>
           </div>
           <div>
-            <p className="text-3xl font-bold text-gray-900">{(totalMessages / 1000).toFixed(1)}K</p>
+            <p className="text-3xl font-bold text-gray-900">{formatCount(totalMessages)}</p>
             <p className="text-sm text-gray-600">Messages</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
@@ -232,10 +240,10 @@ export default function ChatsPage() {
                       {chat.location || 'N/A'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-md">
-                      <p className="line-clamp-2">{chat.metadata?.topic_summary || 'Pending...'}</p>
+                      <p className="line-clamp-2">{chat.metadata?.topicSummary || 'Pending...'}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {chat.metadata?.user_score || 'Pending'}
+                      {chat.metadata?.userScore || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {new Date(chat.created_at).toLocaleString('en-US', {
