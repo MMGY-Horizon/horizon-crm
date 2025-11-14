@@ -5,33 +5,23 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
-  Mail,
-  FileText,
-  BarChart3,
+  MessageSquare,
+  MapPin,
   Settings,
-  HelpCircle,
-  Rocket,
-  Zap,
-  MessageSquare
+  UsersRound,
+  Globe,
+  Search
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Chats', href: '/admin/chats', icon: MessageSquare },
+  { name: 'Places', href: '/admin/places', icon: MapPin },
   { name: 'Users', href: '/admin/users', icon: Users },
-  { name: 'Saved', href: '/admin/saved', icon: Mail },
-  { name: 'Plans', href: '/admin/plans', icon: FileText },
-  { name: 'Updates', href: '/admin/updates', icon: Zap },
-];
-
-const secondaryNavigation = [
-  { name: 'Integrations', href: '/admin/integrations', icon: Rocket },
-  { name: 'Create', href: '/admin/create', icon: BarChart3 },
-];
-
-const bottomNavigation = [
   { name: 'Settings', href: '/admin/settings', icon: Settings },
-  { name: 'Help', href: '/admin/help', icon: HelpCircle },
+  { name: 'Team', href: '/admin/team', icon: UsersRound },
+  { name: 'Crawler', href: '/admin/crawler', icon: Search },
+  { name: 'Web Integration', href: '/admin/web-integration', icon: Globe },
 ];
 
 export default function Sidebar() {
@@ -68,50 +58,7 @@ export default function Sidebar() {
             );
           })}
         </div>
-
-        <div className="mt-8 space-y-1">
-          {secondaryNavigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.name}
-              </Link>
-            );
-          })}
-        </div>
       </nav>
-
-      {/* Bottom Navigation */}
-      <div className="border-t border-gray-200 px-3 py-4">
-        <div className="space-y-1">
-          {bottomNavigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.name}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
