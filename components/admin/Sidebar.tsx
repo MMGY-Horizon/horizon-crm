@@ -20,7 +20,7 @@ const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Chats', href: '/admin/chats', icon: MessageSquare },
   { name: 'Places', href: '/admin/places', icon: MapPin },
-  { name: 'Users', href: '/admin/users', icon: Users },
+  { name: 'Visitors', href: '/admin/users', icon: Users },
   { name: 'Team', href: '/admin/team', icon: UsersRound },
   { name: 'Crawler', href: '/admin/crawler', icon: Search },
   { name: 'Web Integration', href: '/admin/web-integration', icon: Globe },

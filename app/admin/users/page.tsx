@@ -27,7 +27,12 @@ export default function UsersPage() {
       const response = await fetch('/api/users');
       if (response.ok) {
         const data = await response.json();
-        setUsers(data.users || []);
+        // Filter to only show visitors (exclude team members)
+        const allUsers = data.users || [];
+        const visitors = allUsers.filter((user: User) => 
+          user.role === 'Visitor' || user.provider === 'newsletter'
+        );
+        setUsers(visitors);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -58,16 +63,16 @@ export default function UsersPage() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">All Users</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">All Visitors</h1>
             <p className="text-gray-600">
-              Manage and view all users across your platform
+              Track and view all visitors using the concierge app
             </p>
           </div>
           <button
             onClick={fetchUsers}
             disabled={loading}
             className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
-            title="Refresh users"
+            title="Refresh visitors"
           >
             <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -115,13 +120,13 @@ export default function UsersPage() {
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-600">
                       <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
-                      Loading users...
+                      Loading visitors...
                     </td>
                   </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-600">
-                      {searchTerm ? 'No users found matching your search.' : 'No users found.'}
+                      {searchTerm ? 'No visitors found matching your search.' : 'No visitors found.'}
                     </td>
                   </tr>
                 ) : (
@@ -172,7 +177,7 @@ export default function UsersPage() {
         {/* Results Count */}
         {!loading && (
           <div className="mt-4 text-sm text-gray-600 text-center">
-            Showing {filteredUsers.length} of {users.length} users
+            Showing {filteredUsers.length} of {users.length} visitors
           </div>
         )}
       </div>

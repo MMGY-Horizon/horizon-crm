@@ -93,13 +93,13 @@ export default function UserDetailPage() {
         <AdminHeader />
         <div className="mx-auto max-w-7xl px-6 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">User Not Found</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Visitor Not Found</h1>
             <button
-              onClick={() => router.push('/admin/team')}
-              className="text-blue-600 hover:text-blue-700 flex items-center gap-2 mx-auto"
+              onClick={() => router.push('/admin/users')}
+              className="text-blue-600 hover:text-blue-700 flex items-center gap-2 mx-auto cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Team
+              Back to Visitors
             </button>
           </div>
         </div>
@@ -135,17 +135,17 @@ export default function UserDetailPage() {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => router.push('/admin/team')}
+            onClick={() => router.push('/admin/users')}
             className="text-gray-600 hover:text-gray-900 flex items-center gap-2 mb-4 cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Team
+            Back to Visitors
           </button>
           
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {user.name || 'Unknown User'}
+                {user.name || user.email}
               </h1>
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
