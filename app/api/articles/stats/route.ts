@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,15 +8,13 @@ export async function GET(request: NextRequest) {
     const typeFilter = searchParams.get('type');
     const searchQuery = searchParams.get('search');
 
-    const supabase = createClient();
-
     // Calculate date threshold
     const daysAgo = parseInt(dateRange);
     const dateThreshold = new Date();
     dateThreshold.setDate(dateThreshold.getDate() - daysAgo);
 
     // Build query for article mentions with date filter
-    let mentionsQuery = supabase
+    let mentionsQuery = supabaseAdmin
       .from('article_mentions')
       .select('article_id, article_name, article_slug, article_type')
       .gte('mentioned_at', dateThreshold.toISOString());
@@ -42,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query for article views with date filter
-    let viewsQuery = supabase
+    let viewsQuery = supabaseAdmin
       .from('article_views')
       .select('article_id')
       .gte('viewed_at', dateThreshold.toISOString());

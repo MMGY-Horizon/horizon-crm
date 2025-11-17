@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,8 +21,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
-
     // Insert all article mentions in batch
     const mentions = articles.map((article: any) => ({
       article_id: article.id,
@@ -32,7 +30,7 @@ export async function POST(request: NextRequest) {
       chat_id: chatId || null,
     }));
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('article_mentions')
       .insert(mentions)
       .select();

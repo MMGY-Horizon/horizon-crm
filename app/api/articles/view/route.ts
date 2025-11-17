@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,9 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
-
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('article_views')
       .insert({
         article_id: articleId,
