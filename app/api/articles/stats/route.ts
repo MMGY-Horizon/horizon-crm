@@ -83,20 +83,36 @@ export async function GET(request: NextRequest) {
       article.mentions++;
     });
 
-    // Count views
+    // Count views - group by article_id first to avoid duplicate counting issues
+    const viewCounts = new Map<string, { count: number; name?: string; slug?: string; type?: string }>();
     views?.forEach((view) => {
-      if (articleMap.has(view.article_id)) {
-        const article = articleMap.get(view.article_id);
-        article.views++;
+      const existing = viewCounts.get(view.article_id);
+      if (existing) {
+        existing.count++;
+      } else {
+        viewCounts.set(view.article_id, {
+          count: 1,
+          name: view.article_name,
+          slug: view.article_slug,
+          type: view.article_type,
+        });
+      }
+    });
+
+    // Now add/update view counts to articles
+    viewCounts.forEach((viewData, articleId) => {
+      if (articleMap.has(articleId)) {
+        const article = articleMap.get(articleId);
+        article.views = viewData.count;
       } else {
         // Article has views but no mentions yet - add it to the map
-        articleMap.set(view.article_id, {
-          id: view.article_id,
-          name: view.article_name || view.article_slug, // Use article_name or slug as fallback
-          slug: view.article_slug,
-          type: view.article_type || 'Article', // Use article_type or default
+        articleMap.set(articleId, {
+          id: articleId,
+          name: viewData.name || viewData.slug || articleId,
+          slug: viewData.slug || articleId,
+          type: viewData.type || 'Article',
           mentions: 0,
-          views: 1,
+          views: viewData.count,
         });
       }
     });
