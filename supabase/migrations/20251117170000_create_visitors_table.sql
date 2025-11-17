@@ -85,15 +85,17 @@ from public.users
 where role = 'Visitor' or provider = 'newsletter'
 on conflict (id) do nothing;
 
--- Migrate user_id to visitor_id in chats
-update public.chats
-set visitor_id = user_id
-where user_id in (select id from public.visitors);
+-- Migrate user_id to visitor_id in chats (only where user_id exists in visitors table)
+update public.chats c
+set visitor_id = c.user_id
+from public.visitors v
+where c.user_id = v.id;
 
--- Migrate user_id to visitor_id in article_views
-update public.article_views
-set visitor_id = user_id
-where user_id in (select id from public.visitors);
+-- Migrate user_id to visitor_id in article_views (only where user_id exists in visitors table)
+update public.article_views av
+set visitor_id = av.user_id
+from public.visitors v
+where av.user_id = v.id;
 
 -- Remove visitors from users table
 delete from public.users where role = 'Visitor' or provider = 'newsletter';
