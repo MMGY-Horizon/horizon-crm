@@ -16,7 +16,7 @@ export async function OPTIONS(request: NextRequest) {
 // POST /api/visitors/identify - Identify/create visitor from newsletter signup
 export async function POST(request: NextRequest) {
   try {
-    const { email, session_id, chat_id, source } = await request.json();
+    const { email, session_id, chat_id, source, visitor_id } = await request.json();
 
     if (!email) {
       const errorResponse = NextResponse.json(
@@ -31,9 +31,53 @@ export async function POST(request: NextRequest) {
     let selectError = null;
     let foundBySession = false;
 
-    // First, check if a visitor already exists with this session_id
+    // Priority 1: Check if visitor_id is provided (from localStorage)
+    if (visitor_id) {
+      const { data: visitor, error: visitorError } = await supabaseAdmin
+        .from('visitors')
+        .select('*')
+        .eq('id', visitor_id)
+        .maybeSingle();
+
+      if (!visitorError && visitor) {
+        existingVisitor = visitor;
+        foundBySession = true; // Treat as "found by session" since it's the same browsing session
+        
+        // Update email if changed
+        if (existingVisitor.email !== email) {
+          console.log(`Updating email for visitor ${visitor_id}: ${existingVisitor.email} -> ${email}`);
+          const { data: updatedVisitor, error: updateError } = await supabaseAdmin
+            .from('visitors')
+            .update({
+              email: email,
+              last_active_at: new Date().toISOString(),
+            })
+            .eq('id', existingVisitor.id)
+            .select()
+            .single();
+
+          if (!updateError) {
+            existingVisitor = updatedVisitor;
+          } else {
+            console.error('Error updating visitor email:', updateError);
+          }
+        } else {
+          // Just update last_active_at
+          const { error: updateError } = await supabaseAdmin
+            .from('visitors')
+            .update({ last_active_at: new Date().toISOString() })
+            .eq('id', existingVisitor.id);
+
+          if (updateError) {
+            console.error('Error updating visitor last_active_at:', updateError);
+          }
+        }
+      }
+    }
+
+    // Priority 2: Check if a visitor already exists with this session_id
     // Check in chats table
-    if (session_id) {
+    if (!existingVisitor && session_id) {
       const { data: sessionChat, error: chatError } = await supabaseAdmin
         .from('chats')
         .select('visitor_id')
