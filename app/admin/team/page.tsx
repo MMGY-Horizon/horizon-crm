@@ -1,68 +1,118 @@
 "use client";
 
-import { useState } from 'react';
-import { MoreHorizontal } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { MoreHorizontal, Trash2, Edit2, RefreshCw } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 
-interface TeamMember {
+interface User {
   id: string;
-  name: string;
   email: string;
+  name: string | null;
   role: string;
+  image: string | null;
+  created_at: string;
+  last_sign_in_at: string | null;
 }
 
-const teamMembers: TeamMember[] = [
-  {
-    id: '1',
-    name: 'David Kenworthy',
-    email: 'dkenworthy@originoutside.com',
-    role: 'Admin'
-  },
-  {
-    id: '2',
-    name: '',
-    email: 'eshell@mmgy.com',
-    role: 'Admin'
-  },
-  {
-    id: '3',
-    name: 'Jackie Calvert',
-    email: 'info@visittrucketahoe.com',
-    role: 'Creator'
-  },
-  {
-    id: '4',
-    name: 'Jay Callicott',
-    email: 'jcallicott@mmgy.com',
-    role: 'Admin'
-  },
-  {
-    id: '5',
-    name: '',
-    email: 'jcalvert@visittrucketahoe.com',
-    role: 'Admin'
-  },
-  {
-    id: '6',
-    name: 'Lindsay Wilson',
-    email: 'lwilson@originoutside.com',
-    role: 'Admin'
-  },
-  {
-    id: '7',
-    name: 'Tracy Weingard',
-    email: 'tweingard@visittrucketahoe.com',
-    role: 'Admin'
-  },
-];
-
 export default function TeamPage() {
+  const { data: session } = useSession();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState('Member');
+  const [adding, setAdding] = useState(false);
+  const [showMenu, setShowMenu] = useState<string | null>(null);
 
-  const handleAddMember = () => {
-    if (newMemberEmail.trim()) {
-      console.log('Adding member:', newMemberEmail);
-      setNewMemberEmail('');
+  // Fetch users
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users || []);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleAddMember = async () => {
+    if (!newMemberEmail.trim()) return;
+
+    setAdding(true);
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newMemberEmail,
+          name: newMemberName || null,
+          role: newMemberRole,
+        }),
+      });
+
+      if (response.ok) {
+        setNewMemberEmail('');
+        setNewMemberName('');
+        setNewMemberRole('Member');
+        fetchUsers();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to add user');
+      }
+    } catch (error) {
+      console.error('Error adding user:', error);
+      alert('Failed to add user');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to remove this user?')) return;
+
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        fetchUsers();
+      } else {
+        alert('Failed to delete user');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user');
+    }
+  };
+
+  const handleUpdateRole = async (userId: string, newRole: string) => {
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      if (response.ok) {
+        fetchUsers();
+        setShowMenu(null);
+      } else {
+        alert('Failed to update role');
+      }
+    } catch (error) {
+      console.error('Error updating role:', error);
+      alert('Failed to update role');
     }
   };
 
@@ -71,46 +121,139 @@ export default function TeamPage() {
       <AdminHeader title="Team" subtitle="Visit Fort Myers • Live since August 2024" />
 
       <div className="p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">Team Members</h2>
+        {/* Header with stats */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Team Members</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {users.length} {users.length === 1 ? 'member' : 'members'}
+            </p>
+          </div>
+          <button
+            onClick={fetchUsers}
+            disabled={loading}
+            className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
+            title="Refresh users"
+          >
+            <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
 
         {/* Team Members Table */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-12">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Role
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Last Sign In
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
                   Action
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {teamMembers.map((member) => (
-                <tr key={member.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {member.name || '-'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {member.email}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {member.role}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <MoreHorizontal className="h-5 w-5" />
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-600">
+                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+                    Loading team members...
                   </td>
                 </tr>
-              ))}
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-600">
+                    No team members found.
+                  </td>
+                </tr>
+              ) : (
+                users.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex items-center gap-3">
+                        {user.image ? (
+                          <img
+                            src={user.image}
+                            alt={user.name || user.email}
+                            className="h-8 w-8 rounded-full"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-sm font-medium">
+                            {(user.name || user.email).charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="font-medium text-gray-900">
+                          {user.name || '-'}
+                          {session?.user?.email === user.email && (
+                            <span className="ml-2 text-xs text-gray-500">(You)</span>
+                          )}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {user.email}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.role === 'Admin' 
+                          ? 'bg-purple-100 text-purple-800'
+                          : user.role === 'Creator'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {user.last_sign_in_at 
+                        ? new Date(user.last_sign_in_at).toLocaleDateString() 
+                        : 'Never'}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowMenu(showMenu === user.id ? null : user.id)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <MoreHorizontal className="h-5 w-5" />
+                        </button>
+                        
+                        {showMenu === user.id && (
+                          <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg z-10">
+                            <div className="py-1">
+                              <button
+                                onClick={() => handleUpdateRole(user.id, user.role === 'Admin' ? 'Member' : 'Admin')}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                                {user.role === 'Admin' ? 'Make Member' : 'Make Admin'}
+                              </button>
+                              {session?.user?.email !== user.email && (
+                                <button
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -119,27 +262,56 @@ export default function TeamPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-6 max-w-2xl">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Add member</h3>
           <p className="text-sm text-gray-600 mb-4">
-            The user will be emailed an invitation to join your team with an Admin role.
+            Invite a new team member. They'll receive access once they sign in with Google.
           </p>
           
-          <div className="flex gap-3">
-            <input
-              type="email"
-              value={newMemberEmail}
-              onChange={(e) => setNewMemberEmail(e.target.value)}
-              placeholder="Email address"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <button
-              onClick={handleAddMember}
-              className="inline-flex items-center gap-2 px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors"
-            >
-              <span className="text-lg">+</span> Add
-            </button>
+          <div className="space-y-3">
+            <div className="flex gap-3">
+              <input
+                type="email"
+                value={newMemberEmail}
+                onChange={(e) => setNewMemberEmail(e.target.value)}
+                placeholder="Email address"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <input
+                type="text"
+                value={newMemberName}
+                onChange={(e) => setNewMemberName(e.target.value)}
+                placeholder="Name (optional)"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="flex gap-3">
+              <select
+                value={newMemberRole}
+                onChange={(e) => setNewMemberRole(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="Member">Member</option>
+                <option value="Creator">Creator</option>
+                <option value="Admin">Admin</option>
+              </select>
+              <button
+                onClick={handleAddMember}
+                disabled={adding || !newMemberEmail}
+                className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {adding ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg">+</span> Add Member
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
