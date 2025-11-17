@@ -155,7 +155,7 @@ export default function TeamPage() {
         </div>
 
         {/* Team Members Table */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-12">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto mb-12">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -245,7 +245,7 @@ export default function TeamPage() {
                         </button>
                         
                         {showMenu === user.id && (
-                          <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg z-10">
+                          <div className="absolute right-0 bottom-full mb-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg z-50">
                             <div className="py-1">
                               <button
                                 onClick={() => handleUpdateRole(user.id, user.role === 'Admin' ? 'Member' : 'Admin')}
