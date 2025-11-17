@@ -3,6 +3,47 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 
+// GET /api/users/[id] - Get user details
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { id: userId } = await params;
+
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching user:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch user' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ user });
+  } catch (error: any) {
+    console.error('Error in GET /api/users/[id]:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 // PATCH /api/users/[id] - Update user
 export async function PATCH(
   request: NextRequest,

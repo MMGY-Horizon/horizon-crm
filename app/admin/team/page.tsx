@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { MoreHorizontal, Trash2, Edit2, RefreshCw, ChevronDown } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
@@ -18,6 +19,7 @@ interface User {
 
 export default function TeamPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [newMemberEmail, setNewMemberEmail] = useState('');
@@ -193,7 +195,11 @@ export default function TeamPage() {
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                  <tr 
+                    key={user.id} 
+                    onClick={() => router.push(`/admin/users/${user.id}`)}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
                     <td className="px-6 py-4 text-sm">
                       <div className="flex items-center gap-3">
                         {user.image ? (
@@ -236,7 +242,7 @@ export default function TeamPage() {
                         ? new Date(user.last_sign_in_at).toLocaleDateString() 
                         : 'Never'}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="relative">
                         <button
                           onClick={() => setShowMenu(showMenu === user.id ? null : user.id)}
