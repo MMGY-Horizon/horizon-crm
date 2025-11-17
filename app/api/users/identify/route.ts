@@ -1,16 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
+// Handle CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
+}
+
 // POST /api/users/identify - Identify/create user from newsletter signup
 export async function POST(request: NextRequest) {
   try {
     const { email, session_id, chat_id, source } = await request.json();
 
     if (!email) {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Email is required' },
         { status: 400 }
       );
+      errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+      return errorResponse;
     }
 
     // Check if user already exists
@@ -22,10 +36,12 @@ export async function POST(request: NextRequest) {
 
     if (selectError) {
       console.error('Error checking existing user:', selectError);
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Failed to check existing user' },
         { status: 500 }
       );
+      errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+      return errorResponse;
     }
 
     let userId: string;
@@ -43,10 +59,12 @@ export async function POST(request: NextRequest) {
 
       if (updateError) {
         console.error('Error updating user:', updateError);
-        return NextResponse.json(
+        const errorResponse = NextResponse.json(
           { error: 'Failed to update user' },
           { status: 500 }
         );
+        errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+        return errorResponse;
       }
 
       userId = updatedUser.id;
@@ -65,10 +83,12 @@ export async function POST(request: NextRequest) {
 
       if (insertError) {
         console.error('Error creating user:', insertError);
-        return NextResponse.json(
+        const errorResponse = NextResponse.json(
           { error: 'Failed to create user' },
           { status: 500 }
         );
+        errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+        return errorResponse;
       }
 
       userId = newUser.id;
@@ -103,17 +123,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user_id: userId,
       message: 'User identified successfully',
     });
+    
+    // Add CORS headers
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    
+    return response;
   } catch (error: any) {
     console.error('Error in POST /api/users/identify:', error);
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
     );
+    
+    // Add CORS headers
+    errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+    
+    return errorResponse;
   }
 }
 
