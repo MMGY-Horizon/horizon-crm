@@ -239,7 +239,7 @@ export default function TeamPage() {
                       <div className="relative">
                         <button
                           onClick={() => setShowMenu(showMenu === user.id ? null : user.id)}
-                          className="text-gray-400 hover:text-gray-600"
+                          className="text-gray-400 hover:text-gray-600 cursor-pointer"
                         >
                           <MoreHorizontal className="h-5 w-5" />
                         </button>
@@ -249,7 +249,7 @@ export default function TeamPage() {
                             <div className="py-1">
                               <button
                                 onClick={() => handleUpdateRole(user.id, user.role === 'Admin' ? 'Member' : 'Admin')}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer"
                               >
                                 <Edit2 className="h-4 w-4" />
                                 {user.role === 'Admin' ? 'Make Member' : 'Make Admin'}
@@ -257,7 +257,7 @@ export default function TeamPage() {
                               {session?.user?.email !== user.email && (
                                 <button
                                   onClick={() => handleDeleteUser(user.id, user.name || user.email)}
-                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                   Remove
@@ -315,7 +315,7 @@ export default function TeamPage() {
               <button
                 onClick={handleAddMember}
                 disabled={adding || !newMemberEmail}
-                className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {adding ? (
                   <>
@@ -356,14 +356,14 @@ export default function TeamPage() {
               <button
                 onClick={() => setDeleteConfirm({ show: false, userId: '', userName: '' })}
                 disabled={deleting}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={deleting}
-                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {deleting ? (
                   <>
