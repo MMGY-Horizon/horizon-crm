@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 import { MoreHorizontal, Trash2, Edit2, RefreshCw, ChevronDown } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 
@@ -195,9 +196,11 @@ export default function TeamPage() {
                     <td className="px-6 py-4 text-sm">
                       <div className="flex items-center gap-3">
                         {user.image ? (
-                          <img
+                          <Image
                             src={user.image}
                             alt={user.name || user.email}
+                            width={32}
+                            height={32}
                             className="h-8 w-8 rounded-full"
                           />
                         ) : (
