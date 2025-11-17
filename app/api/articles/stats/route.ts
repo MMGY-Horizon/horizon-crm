@@ -3,15 +3,20 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[Article Stats API] Starting request...');
     const { searchParams } = new URL(request.url);
     const dateRange = searchParams.get('dateRange') || '30'; // days
     const typeFilter = searchParams.get('type');
     const searchQuery = searchParams.get('search');
 
+    console.log('[Article Stats API] Params:', { dateRange, typeFilter, searchQuery });
+
     // Calculate date threshold
     const daysAgo = parseInt(dateRange);
     const dateThreshold = new Date();
     dateThreshold.setDate(dateThreshold.getDate() - daysAgo);
+
+    console.log('[Article Stats API] Querying mentions from:', dateThreshold.toISOString());
 
     // Build query for article mentions with date filter
     let mentionsQuery = supabaseAdmin
@@ -32,28 +37,32 @@ export async function GET(request: NextRequest) {
     const { data: mentions, error: mentionsError } = await mentionsQuery;
 
     if (mentionsError) {
-      console.error('Error fetching article mentions:', mentionsError);
+      console.error('[Article Stats API] Error fetching article mentions:', mentionsError);
       return NextResponse.json(
-        { error: 'Failed to fetch article stats' },
+        { error: `Failed to fetch article mentions: ${mentionsError.message}` },
         { status: 500 }
       );
     }
 
+    console.log('[Article Stats API] Mentions fetched:', mentions?.length || 0);
+
     // Build query for article views with date filter
     let viewsQuery = supabaseAdmin
       .from('article_views')
-      .select('article_id')
+      .select('article_id, article_slug, article_name, article_type')
       .gte('viewed_at', dateThreshold.toISOString());
 
     const { data: views, error: viewsError } = await viewsQuery;
 
     if (viewsError) {
-      console.error('Error fetching article views:', viewsError);
+      console.error('[Article Stats API] Error fetching article views:', viewsError);
       return NextResponse.json(
-        { error: 'Failed to fetch article stats' },
+        { error: `Failed to fetch article views: ${viewsError.message}` },
         { status: 500 }
       );
     }
+
+    console.log('[Article Stats API] Views fetched:', views?.length || 0);
 
     // Aggregate data by article
     const articleMap = new Map<string, any>();
@@ -79,6 +88,16 @@ export async function GET(request: NextRequest) {
       if (articleMap.has(view.article_id)) {
         const article = articleMap.get(view.article_id);
         article.views++;
+      } else {
+        // Article has views but no mentions yet - add it to the map
+        articleMap.set(view.article_id, {
+          id: view.article_id,
+          name: view.article_name || view.article_slug, // Use article_name or slug as fallback
+          slug: view.article_slug,
+          type: view.article_type || 'Article', // Use article_type or default
+          mentions: 0,
+          views: 1,
+        });
       }
     });
 
@@ -91,6 +110,12 @@ export async function GET(request: NextRequest) {
     const totalMentioned = articles.reduce((sum, a) => sum + a.mentions, 0);
     const totalViews = articles.reduce((sum, a) => sum + a.views, 0);
 
+    console.log('[Article Stats API] Returning stats:', {
+      articlesCount: articles.length,
+      totalMentioned,
+      totalViews,
+    });
+
     return NextResponse.json({
       articles,
       totals: {
@@ -100,7 +125,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error in article stats API:', error);
+    console.error('[Article Stats API] Unexpected error:', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

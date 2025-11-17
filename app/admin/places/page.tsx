@@ -66,8 +66,17 @@ export default function PlacesPage() {
       });
 
       const response = await fetch(`/api/articles/stats?${params}`);
+      console.log('API Response Status:', response.status, response.statusText);
       if (!response.ok) {
-        throw new Error('Failed to fetch article stats');
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText || 'Unknown error' };
+        }
+        throw new Error(`Failed to fetch article stats (${response.status}): ${errorData.error || response.statusText}`);
       }
 
       const data: ArticleStats = await response.json();
@@ -91,6 +100,35 @@ export default function PlacesPage() {
       return `${(count / 1000).toFixed(1)}K`;
     }
     return count.toString();
+  };
+
+  // Download CSV function
+  const handleDownloadCSV = () => {
+    const headers = ['Name', 'Slug', 'Type', 'Mentions', 'Views'];
+    const rows = places.map(place => [
+      place.name,
+      place.slug,
+      place.type,
+      place.mentions.toString(),
+      place.views.toString(),
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `places_${dateRangeLabel.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const totalPages = Math.ceil(places.length / itemsPerPage);
@@ -183,15 +221,15 @@ export default function PlacesPage() {
         <div className="mb-6 flex items-center gap-8">
           <div>
             <p className="text-3xl font-bold text-gray-900">{formatCount(totals.totalMentioned)}</p>
-            <p className="text-sm text-gray-600">Total Mentions</p>
+            <p className="text-sm text-gray-700 font-medium">Total Mentions</p>
           </div>
           <div>
             <p className="text-3xl font-bold text-gray-900">{formatCount(totals.totalViews)}</p>
-            <p className="text-sm text-gray-600">Total Views</p>
+            <p className="text-sm text-gray-700 font-medium">Total Views</p>
           </div>
           <div>
             <p className="text-3xl font-bold text-gray-900">{formatCount(totals.uniqueArticles)}</p>
-            <p className="text-sm text-gray-600">Unique Articles</p>
+            <p className="text-sm text-gray-700 font-medium">Unique Articles</p>
           </div>
           <div className="ml-auto flex gap-2">
             <button 
@@ -202,7 +240,11 @@ export default function PlacesPage() {
             >
               <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
-            <button className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
+            <button 
+              onClick={handleDownloadCSV}
+              className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
+              title="Download as CSV"
+            >
               <Download className="h-5 w-5" />
             </button>
           </div>
@@ -213,16 +255,16 @@ export default function PlacesPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">
                   Type
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
                   Mentions
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-20">
                   Views
                 </th>
               </tr>
@@ -230,14 +272,14 @@ export default function PlacesPage() {
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-500">
-                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-600">
+                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-gray-600" />
                     Loading article stats...
                   </td>
                 </tr>
               ) : displayedPlaces.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-500">
+                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-600">
                     No articles found. Try adjusting your filters or search query.
                   </td>
                 </tr>
@@ -249,11 +291,11 @@ export default function PlacesPage() {
                   >
                     <td className="px-6 py-4 text-sm text-gray-900 font-medium">
                       <div>
-                        <div className="font-medium">{place.name}</div>
-                        <div className="text-xs text-gray-500">{place.slug}</div>
+                        <div className="font-semibold text-gray-900">{place.name}</div>
+                        <div className="text-xs text-gray-600 mt-0.5">{place.slug}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">
                       {place.type}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
@@ -279,7 +321,7 @@ export default function PlacesPage() {
             >
               ‹
             </button>
-            <span className="px-4 py-2 text-sm text-gray-600">
+            <span className="px-4 py-2 text-sm text-gray-700 font-medium">
               {currentPage} of {totalPages}
             </span>
             <button
