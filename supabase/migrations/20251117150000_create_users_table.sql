@@ -1,6 +1,6 @@
 -- Create users table for team management
 create table if not exists public.users (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   email text unique not null,
   name text,
   image text,
