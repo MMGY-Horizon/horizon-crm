@@ -86,16 +86,20 @@ where role = 'Visitor' or provider = 'newsletter'
 on conflict (id) do nothing;
 
 -- Migrate user_id to visitor_id in chats (only where user_id exists in visitors table)
+-- Note: user_id might be text or uuid depending on migration state, so we cast to text for comparison
 update public.chats c
-set visitor_id = c.user_id
+set visitor_id = v.id
 from public.visitors v
-where c.user_id = v.id;
+where c.user_id is not null 
+  and c.user_id::text = v.id::text;
 
 -- Migrate user_id to visitor_id in article_views (only where user_id exists in visitors table)
+-- Note: user_id might be text or uuid depending on migration state, so we cast to text for comparison
 update public.article_views av
-set visitor_id = av.user_id
+set visitor_id = v.id
 from public.visitors v
-where av.user_id = v.id;
+where av.user_id is not null 
+  and av.user_id::text = v.id::text;
 
 -- Remove visitors from users table
 delete from public.users where role = 'Visitor' or provider = 'newsletter';
