@@ -221,43 +221,58 @@ export async function POST(request: NextRequest) {
       visitorId = newVisitor.id;
     }
 
-    // Link session and chat to visitor if provided
-    if (session_id || chat_id) {
-      // Update chats table for this session_id (links all chats from this session)
-      if (session_id) {
-        const { error: chatSessionUpdateError } = await supabaseAdmin
-          .from('chats')
-          .update({ visitor_id: visitorId })
-          .eq('session_id', session_id)
-          .is('visitor_id', null); // Only update if not already linked
+    // Always link session and chat data to visitor when identified
+    let linkedChatsCount = 0;
+    let linkedViewsCount = 0;
 
-        if (chatSessionUpdateError) {
-          console.error('Error linking session chats to visitor:', chatSessionUpdateError);
+    // Update chats table for this session_id (links all chats from this session)
+    if (session_id) {
+      const { data: linkedChats, error: chatSessionUpdateError } = await supabaseAdmin
+        .from('chats')
+        .update({ visitor_id: visitorId })
+        .eq('session_id', session_id)
+        .is('visitor_id', null) // Only update if not already linked
+        .select('id');
+
+      if (chatSessionUpdateError) {
+        console.error('Error linking session chats to visitor:', chatSessionUpdateError);
+      } else {
+        linkedChatsCount = linkedChats?.length || 0;
+        if (linkedChatsCount > 0) {
+          console.log(`Linked ${linkedChatsCount} chat(s) to visitor ${visitorId}`);
         }
       }
+    }
 
-      // Update specific chat if chat_id provided
-      if (chat_id) {
-        const { error: chatUpdateError } = await supabaseAdmin
-          .from('chats')
-          .update({ visitor_id: visitorId })
-          .eq('id', chat_id);
+    // Update specific chat if chat_id provided
+    if (chat_id) {
+      const { error: chatUpdateError } = await supabaseAdmin
+        .from('chats')
+        .update({ visitor_id: visitorId })
+        .eq('id', chat_id);
 
-        if (chatUpdateError) {
-          console.error('Error linking chat to visitor:', chatUpdateError);
-        }
+      if (chatUpdateError) {
+        console.error('Error linking chat to visitor:', chatUpdateError);
+      } else {
+        console.log(`Linked specific chat ${chat_id} to visitor ${visitorId}`);
       }
+    }
 
-      // Update article_views table if session_id provided
-      if (session_id) {
-        const { error: viewUpdateError } = await supabaseAdmin
-          .from('article_views')
-          .update({ visitor_id: visitorId })
-          .eq('session_id', session_id)
-          .is('visitor_id', null); // Only update if not already linked
+    // Update article_views table if session_id provided
+    if (session_id) {
+      const { data: linkedViews, error: viewUpdateError } = await supabaseAdmin
+        .from('article_views')
+        .update({ visitor_id: visitorId })
+        .eq('session_id', session_id)
+        .is('visitor_id', null) // Only update if not already linked
+        .select('id');
 
-        if (viewUpdateError) {
-          console.error('Error linking views to visitor:', viewUpdateError);
+      if (viewUpdateError) {
+        console.error('Error linking views to visitor:', viewUpdateError);
+      } else {
+        linkedViewsCount = linkedViews?.length || 0;
+        if (linkedViewsCount > 0) {
+          console.log(`Linked ${linkedViewsCount} view(s) to visitor ${visitorId}`);
         }
       }
     }
@@ -266,6 +281,10 @@ export async function POST(request: NextRequest) {
       success: true,
       visitor_id: visitorId,
       message: 'Visitor identified successfully',
+      linked: {
+        chats: linkedChatsCount,
+        views: linkedViewsCount,
+      },
     });
     
     // Add CORS headers
