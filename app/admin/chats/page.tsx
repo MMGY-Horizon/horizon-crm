@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Search, Download, User, Bot } from 'lucide-react';
+import { ChevronDown, ChevronRight, Search, Download, User, Bot, RefreshCw } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 
 interface Message {
@@ -33,6 +33,8 @@ export default function ChatsPage() {
   const [loadingChats, setLoadingChats] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
 
   // Fetch chats from API
   useEffect(() => {
@@ -57,6 +59,42 @@ export default function ChatsPage() {
 
   const totalChats = chats.length;
   const totalMessages = chats.reduce((sum, chat) => sum + chat.message_count, 0);
+
+  const handleRefreshSummaries = async () => {
+    setRefreshing(true);
+    setRefreshMessage(null);
+    
+    try {
+      const response = await fetch('/api/admin/refresh-summaries', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        if (data.successCount > 0) {
+          setRefreshMessage(`✓ Summarized ${data.successCount} chat${data.successCount > 1 ? 's' : ''}${data.totalSkipped ? ` (${data.totalSkipped} already up to date)` : ''}`);
+          // Refresh the chats list
+          const chatsResponse = await fetch('/api/chats');
+          if (chatsResponse.ok) {
+            const chatsData = await chatsResponse.json();
+            setChats(chatsData);
+          }
+        } else {
+          setRefreshMessage(`✓ All chats are up to date (${data.skippedCount || 0} chats)`);
+        }
+      } else {
+        setRefreshMessage(`✗ Error: ${data.error || 'Failed to refresh'}`);
+      }
+    } catch (error) {
+      console.error('Error refreshing summaries:', error);
+      setRefreshMessage('✗ Failed to refresh summaries');
+    } finally {
+      setRefreshing(false);
+      // Clear message after 5 seconds
+      setTimeout(() => setRefreshMessage(null), 5000);
+    }
+  };
 
   // Format number with K only if >= 1000
   const formatCount = (count: number): string => {
@@ -163,8 +201,22 @@ export default function ChatsPage() {
             <p className="text-sm text-gray-600">Messages</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <button className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-              Insights
+            {refreshMessage && (
+              <div className={`text-sm px-3 py-1 rounded ${
+                refreshMessage.startsWith('✓') 
+                  ? 'bg-green-50 text-green-700 border border-green-200' 
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}>
+                {refreshMessage}
+              </div>
+            )}
+            <button 
+              onClick={handleRefreshSummaries}
+              disabled={refreshing}
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
             <button className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50">
               <Download className="h-5 w-5" />

@@ -157,19 +157,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/chats/summarize - Summarize all unsummarized chats
+// GET /api/chats/summarize - Summarize all unsummarized chats or chats with new messages
 export async function GET(request: NextRequest) {
   if (!verifyApiKey(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    // Find chats without topic summaries
+    // Find all chats (we'll filter based on updated_at vs summarizedAt)
     const { data: chats, error: chatsError } = await supabaseAdmin
       .from('chats')
-      .select('chat_id, metadata')
-      .or('metadata->topicSummary.is.null,metadata->topicSummary.eq.')
-      .limit(50); // Process up to 50 chats at a time
+      .select('chat_id, metadata, updated_at')
+      .limit(100); // Process up to 100 chats at a time
 
     if (chatsError) {
       throw chatsError;
@@ -183,13 +182,33 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    console.log(`[CRM] Found ${chats.length} chats to summarize`);
+    // Filter chats that need summarization:
+    // 1. Never been summarized (no topicSummary)
+    // 2. Has new messages (updated_at > summarizedAt)
+    const chatsToSummarize = chats.filter(chat => {
+      const hasNoSummary = !chat.metadata?.topicSummary;
+      const summarizedAt = chat.metadata?.summarizedAt;
+      const hasNewMessages = summarizedAt && new Date(chat.updated_at) > new Date(summarizedAt);
+      
+      return hasNoSummary || hasNewMessages;
+    });
+
+    if (chatsToSummarize.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'No chats need summarization (all up to date)',
+        summarizedCount: 0,
+        skippedCount: chats.length,
+      });
+    }
+
+    console.log(`[CRM] Found ${chatsToSummarize.length} chats to summarize (${chats.length - chatsToSummarize.length} skipped - up to date)`);
 
     const results = [];
     let successCount = 0;
     let failCount = 0;
 
-    for (const chat of chats) {
+    for (const chat of chatsToSummarize) {
       try {
         // Fetch messages for this chat
         const { data: messages } = await supabaseAdmin
@@ -244,7 +263,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      totalProcessed: chats.length,
+      totalProcessed: chatsToSummarize.length,
+      totalSkipped: chats.length - chatsToSummarize.length,
       successCount,
       failCount,
       results,
