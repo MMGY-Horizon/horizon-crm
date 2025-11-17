@@ -117,10 +117,16 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Convert to array and sort by mentions
-    const articles = Array.from(articleMap.values()).sort(
-      (a, b) => b.mentions - a.mentions
-    );
+    // Convert to array and sort by total engagement (mentions + views), then by mentions
+    const articles = Array.from(articleMap.values()).sort((a, b) => {
+      const aTotal = a.mentions + a.views;
+      const bTotal = b.mentions + b.views;
+      if (aTotal === bTotal) {
+        // If total engagement is equal, sort by mentions
+        return b.mentions - a.mentions;
+      }
+      return bTotal - aTotal;
+    });
 
     // Calculate totals
     const totalMentioned = articles.reduce((sum, a) => sum + a.mentions, 0);
