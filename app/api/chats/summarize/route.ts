@@ -10,9 +10,11 @@ function verifyApiKey(request: NextRequest): boolean {
 
 interface ChatSummary {
   topicSummary: string;
-  userScore: number; // 1-5
+  userScore: number; // 1-5 (satisfaction)
+  leadScore: number; // 0-10 (conversion potential)
   sentiment: string;
   topics: string[];
+  conversionSignals: string[];
 }
 
 async function summarizeChat(messages: any[]): Promise<ChatSummary> {
@@ -27,21 +29,42 @@ async function summarizeChat(messages: any[]): Promise<ChatSummary> {
     .map((msg) => `${msg.role.toUpperCase()}: ${msg.content}`)
     .join('\n\n');
 
-  const prompt = `Analyze this customer service chat conversation and provide:
-1. A SHORT topic summary (max 10 words) - what was the main question/need?
-2. A user satisfaction score (1-5) based on how well their needs were met
-3. The overall sentiment (positive, neutral, negative)
-4. Key topics discussed (up to 3 topics)
+  const prompt = `Analyze this Fort Myers tourism chat for LEAD QUALITY and conversion potential:
+
+LEAD SCORING (0-10):
+- 10: Hot Lead - Ready to book (mentions dates, pricing, booking, availability, contact info)
+- 7-9: Warm Lead - Active planning (specific logistics, multiple topics, group details, near-term travel)
+- 4-6: Qualified - Research phase (2-3 questions, genuine interest, some context)
+- 1-3: Cold - Just browsing (generic questions, no specifics, low engagement)
+- 0: Unqualified (off-topic, testing, no travel intent)
+
+KEY CONVERSION SIGNALS:
+- Specific dates/timeframes mentioned
+- Pricing/availability/booking questions
+- Multiple detailed topics (hotels + dining + activities)
+- Urgency indicators ("planning", "visiting soon", "next month")
+- Group size/accommodation needs
+- Transportation/logistics questions
+- 4+ engaged messages
+
+Also provide:
+1. SHORT topic summary (max 10 words)
+2. User satisfaction score (1-5) - how helpful was the conversation
+3. Sentiment (positive, neutral, negative)
+4. Key topics discussed (up to 3)
+5. Conversion signals detected (list specific indicators found)
 
 Conversation:
 ${conversation}
 
 Respond in JSON format:
 {
-  "topicSummary": "short summary here",
+  "topicSummary": "Best family beaches and restaurants",
   "userScore": 4,
+  "leadScore": 7,
   "sentiment": "positive",
-  "topics": ["beaches", "restaurants"]
+  "topics": ["beaches", "restaurants", "family activities"],
+  "conversionSignals": ["specific dates mentioned", "asked about group accommodations", "multiple topics"]
 }`;
 
   try {
@@ -69,8 +92,9 @@ Respond in JSON format:
 
     const summary: ChatSummary = JSON.parse(response);
     
-    // Validate score is between 1-5
+    // Validate scores
     summary.userScore = Math.max(1, Math.min(5, summary.userScore));
+    summary.leadScore = Math.max(0, Math.min(10, summary.leadScore || 0));
     
     return summary;
   } catch (error) {
@@ -79,8 +103,10 @@ Respond in JSON format:
     return {
       topicSummary: 'Conversation about Fort Myers travel',
       userScore: 3,
+      leadScore: 3,
       sentiment: 'neutral',
       topics: ['general inquiry'],
+      conversionSignals: [],
     };
   }
 }
@@ -129,8 +155,10 @@ export async function POST(request: NextRequest) {
         metadata: {
           topicSummary: summary.topicSummary,
           userScore: summary.userScore,
+          leadScore: summary.leadScore,
           sentiment: summary.sentiment,
           topics: summary.topics,
+          conversionSignals: summary.conversionSignals,
           summarizedAt: new Date().toISOString(),
         },
         updated_at: new Date().toISOString(),
@@ -184,13 +212,16 @@ export async function GET(request: NextRequest) {
 
     // Filter chats that need summarization:
     // 1. Never been summarized (no topicSummary)
-    // 2. Has new messages (updated_at > summarizedAt)
+    // 2. Missing new fields (no leadScore or conversionSignals)
+    // 3. Has new messages (updated_at > summarizedAt)
     const chatsToSummarize = chats.filter(chat => {
       const hasNoSummary = !chat.metadata?.topicSummary;
+      const missingLeadScore = chat.metadata?.leadScore === undefined || chat.metadata?.leadScore === null;
+      const missingConversionSignals = !chat.metadata?.conversionSignals;
       const summarizedAt = chat.metadata?.summarizedAt;
       const hasNewMessages = summarizedAt && new Date(chat.updated_at) > new Date(summarizedAt);
       
-      return hasNoSummary || hasNewMessages;
+      return hasNoSummary || missingLeadScore || missingConversionSignals || hasNewMessages;
     });
 
     if (chatsToSummarize.length === 0) {
@@ -233,8 +264,10 @@ export async function GET(request: NextRequest) {
               ...chat.metadata,
               topicSummary: summary.topicSummary,
               userScore: summary.userScore,
+              leadScore: summary.leadScore,
               sentiment: summary.sentiment,
               topics: summary.topics,
+              conversionSignals: summary.conversionSignals,
               summarizedAt: new Date().toISOString(),
             },
             updated_at: new Date().toISOString(),

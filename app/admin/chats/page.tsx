@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronRight, Search, Download, User, Bot, RefreshCw } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 
@@ -25,6 +25,7 @@ interface Chat {
 
 export default function ChatsPage() {
   const [dateRange, setDateRange] = useState('Last 30 days');
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [chats, setChats] = useState<Chat[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -35,6 +36,28 @@ export default function ChatsPage() {
   const itemsPerPage = 20;
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
+  const dateDropdownRef = useRef<HTMLDivElement>(null);
+
+  const dateRangeOptions = [
+    'Last 7 days',
+    'Last 30 days',
+    'Last 90 days',
+    'Last 6 months',
+    'Last year',
+    'All time'
+  ];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dateDropdownRef.current && !dateDropdownRef.current.contains(event.target as Node)) {
+        setShowDateDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Fetch chats from API
   useEffect(() => {
@@ -59,6 +82,69 @@ export default function ChatsPage() {
 
   const totalChats = chats.length;
   const totalMessages = chats.reduce((sum, chat) => sum + chat.message_count, 0);
+
+  const handleDownloadCSV = () => {
+    // Prepare CSV data
+    const headers = ['Chat ID', 'Session ID', 'Location', 'Topic Summary', 'Lead Score (0-10)', 'Satisfaction (1-5)', 'Sentiment', 'Topics', 'Conversion Signals', 'Message Count', 'Status', 'Created At', 'Updated At'];
+    
+    const rows = filteredChats.map(chat => [
+      chat.chat_id,
+      chat.session_id,
+      chat.location || 'N/A',
+      chat.metadata?.topicSummary || 'Pending...',
+      chat.metadata?.leadScore || '-',
+      chat.metadata?.userScore || '-',
+      chat.metadata?.sentiment || '-',
+      chat.metadata?.topics?.join('; ') || '-',
+      chat.metadata?.conversionSignals?.join('; ') || '-',
+      chat.message_count,
+      chat.status,
+      new Date(chat.created_at).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }),
+      new Date(chat.updated_at).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
+    ]);
+
+    // Convert to CSV format
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => 
+        row.map(cell => {
+          // Escape cells containing commas, quotes, or newlines
+          const cellStr = String(cell);
+          if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+            return `"${cellStr.replace(/"/g, '""')}"`;
+          }
+          return cellStr;
+        }).join(',')
+      )
+    ].join('\n');
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `horizon-crm-chats-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleRefreshSummaries = async () => {
     setRefreshing(true);
@@ -145,12 +231,38 @@ export default function ChatsPage() {
     setExpandedRows(newExpanded);
   };
 
+  // Filter by date range
+  const getDateThreshold = () => {
+    const now = new Date();
+    switch (dateRange) {
+      case 'Last 7 days':
+        return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      case 'Last 30 days':
+        return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      case 'Last 90 days':
+        return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      case 'Last 6 months':
+        return new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+      case 'Last year':
+        return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      case 'All time':
+      default:
+        return new Date(0); // Beginning of time
+    }
+  };
+
   const filteredChats = chats.filter(chat => {
+    // Date filter
+    const chatDate = new Date(chat.created_at);
+    const threshold = getDateThreshold();
+    if (chatDate < threshold) return false;
+
+    // Search filter
     const query = searchQuery.toLowerCase();
     return (
       chat.chat_id.toLowerCase().includes(query) ||
       (chat.location?.toLowerCase() || '').includes(query) ||
-      (chat.metadata?.topic_summary?.toLowerCase() || '').includes(query) ||
+      (chat.metadata?.topicSummary?.toLowerCase() || '').includes(query) ||
       chat.session_id.toLowerCase().includes(query)
     );
   });
@@ -168,10 +280,35 @@ export default function ChatsPage() {
       <div className="p-8">
         {/* Controls Row */}
         <div className="mb-6 flex items-center justify-between">
-          <button className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-            {dateRange}
-            <ChevronDown className="h-4 w-4" />
-          </button>
+          <div className="relative" ref={dateDropdownRef}>
+            <button 
+              onClick={() => setShowDateDropdown(!showDateDropdown)}
+              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+            >
+              {dateRange}
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            
+            {showDateDropdown && (
+              <div className="absolute z-10 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg">
+                {dateRangeOptions.map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => {
+                      setDateRange(option);
+                      setShowDateDropdown(false);
+                      setCurrentPage(1); // Reset to first page
+                    }}
+                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
+                      dateRange === option ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -213,12 +350,16 @@ export default function ChatsPage() {
             <button 
               onClick={handleRefreshSummaries}
               disabled={refreshing}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
-            <button className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50">
+            <button 
+              onClick={handleDownloadCSV}
+              className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
+              title="Download as CSV"
+            >
               <Download className="h-5 w-5" />
             </button>
           </div>
@@ -242,7 +383,7 @@ export default function ChatsPage() {
                   Short Topic Summary
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Score (1-5)
+                  Lead Score (0-10)
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Time (PT)
@@ -294,8 +435,20 @@ export default function ChatsPage() {
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-md">
                       <p className="line-clamp-2">{chat.metadata?.topicSummary || 'Pending...'}</p>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {chat.metadata?.userScore || '-'}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {chat.metadata?.leadScore !== undefined ? (
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          chat.metadata.leadScore >= 8 ? 'bg-red-100 text-red-800' :
+                          chat.metadata.leadScore >= 6 ? 'bg-orange-100 text-orange-800' :
+                          chat.metadata.leadScore >= 4 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {chat.metadata.leadScore === 10 ? '🔥 ' : 
+                           chat.metadata.leadScore >= 8 ? '🌶️ ' :
+                           chat.metadata.leadScore >= 6 ? '⚡ ' : ''}
+                          {chat.metadata.leadScore}/10
+                        </span>
+                      ) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {new Date(chat.created_at).toLocaleString('en-US', {

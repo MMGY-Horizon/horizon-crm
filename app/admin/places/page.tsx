@@ -1,57 +1,89 @@
 "use client";
 
-import { useState } from 'react';
-import { ChevronDown, Search, Download, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronDown, Search, Download, RefreshCw } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 
 interface Place {
   id: string;
-  number: number;
   name: string;
+  slug: string;
   type: string;
-  where: string;
-  featured: boolean;
   mentions: number;
   views: number;
-  handoffs: number;
 }
 
-// Sample places data
-const samplePlaces: Place[] = [
-  { id: '1', number: 1, name: 'Donner Lake', type: 'Attraction', where: 'Truckee', featured: false, mentions: 916, views: 2, handoffs: 0 },
-  { id: '2', number: 2, name: 'Truckee River Legacy Trail - Glenshire Trailhead', type: 'Attraction', where: 'Truckee', featured: false, mentions: 678, views: 7, handoffs: 0 },
-  { id: '3', number: 3, name: 'Cottonwood Restaurant and Bar', type: 'Restaurant', where: 'Truckee', featured: true, mentions: 644, views: 4, handoffs: 2 },
-  { id: '4', number: 4, name: 'Moody\'s Bistro Bar & Beats', type: 'Restaurant', where: 'Truckee', featured: true, mentions: 499, views: 9, handoffs: 1 },
-  { id: '5', number: 5, name: 'Old Hwy 40', type: 'Attraction', where: 'Truckee', featured: false, mentions: 451, views: 3, handoffs: 0 },
-  { id: '6', number: 6, name: 'Martis Valley Trailhead', type: 'Attraction', where: 'Truckee', featured: false, mentions: 448, views: 3, handoffs: 0 },
-  { id: '7', number: 7, name: 'Donner Lake Rim Trail Trailhead - Berngarten', type: 'Attraction', where: 'Truckee', featured: false, mentions: 425, views: 5, handoffs: 0 },
-  { id: '8', number: 8, name: 'Martis Creek Wildlife Area', type: 'Attraction', where: 'Truckee', featured: false, mentions: 420, views: 3, handoffs: 0 },
-  { id: '9', number: 9, name: 'Donner Summit Canyon', type: 'Attraction', where: 'Truckee', featured: false, mentions: 400, views: 5, handoffs: 0 },
-  { id: '10', number: 10, name: 'Donner Memorial State Park', type: 'Attraction', where: 'Truckee', featured: false, mentions: 378, views: 3, handoffs: 0 },
-  { id: '11', number: 11, name: 'Trout Creek Trail Trailhead', type: 'Attraction', where: 'Truckee', featured: false, mentions: 363, views: 7, handoffs: 0 },
-  { id: '12', number: 12, name: 'Truckee Bike Park', type: 'Attraction', where: 'Truckee', featured: false, mentions: 357, views: 3, handoffs: 0 },
-  { id: '13', number: 13, name: 'Martis Valley', type: 'Attraction', where: 'Truckee', featured: false, mentions: 343, views: 1, handoffs: 0 },
-  { id: '14', number: 14, name: 'Pianeta', type: 'Restaurant', where: 'Truckee', featured: true, mentions: 303, views: 3, handoffs: 0 },
-  { id: '15', number: 15, name: 'Donner Lake Overlook', type: 'Attraction', where: 'Truckee', featured: false, mentions: 294, views: 2, handoffs: 0 },
-  { id: '16', number: 16, name: 'Historic Downtown Truckee & Visitor Center', type: 'Attraction', where: 'Truckee', featured: false, mentions: 284, views: 3, handoffs: 0 },
-  { id: '17', number: 17, name: 'West End Beach', type: 'Attraction', where: 'Truckee', featured: false, mentions: 282, views: 0, handoffs: 0 },
-  { id: '18', number: 18, name: 'Prosser Creek Reservoir', type: 'Attraction', where: 'Nevada County', featured: false, mentions: 242, views: 2, handoffs: 0 },
-  { id: '19', number: 19, name: 'Bike Truckee', type: 'Attraction', where: 'Truckee', featured: false, mentions: 238, views: 1, handoffs: 0 },
-  { id: '20', number: 20, name: 'Old Town Tap', type: 'Restaurant', where: 'Truckee', featured: true, mentions: 228, views: 2, handoffs: 1 },
-];
+interface ArticleStats {
+  articles: Place[];
+  totals: {
+    totalMentioned: number;
+    totalViews: number;
+    uniqueArticles: number;
+  };
+}
 
 export default function PlacesPage() {
-  const [dateRange, setDateRange] = useState('Last 30 days');
+  const [dateRange, setDateRange] = useState('30'); // days
+  const [dateRangeLabel, setDateRangeLabel] = useState('Last 30 days');
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [typeFilter, setTypeFilter] = useState('All types');
-  const [showFilter, setShowFilter] = useState('Show all');
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [places] = useState<Place[]>(samplePlaces);
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totals, setTotals] = useState({
+    totalMentioned: 0,
+    totalViews: 0,
+    uniqueArticles: 0,
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  const totalMentioned = 17900;
-  const totalFeatured = 36;
-  const totalHandoffs = 43;
+  const dateRangeOptions = [
+    { label: 'Last 7 days', value: '7' },
+    { label: 'Last 30 days', value: '30' },
+    { label: 'Last 90 days', value: '90' },
+    { label: 'Last 365 days', value: '365' },
+  ];
+
+  const typeOptions = [
+    'All types',
+    'Search Result',
+    'Article',
+    'Attraction',
+    'Restaurant',
+    'Activity',
+  ];
+
+  // Fetch article stats from API
+  const fetchStats = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        dateRange,
+        type: typeFilter !== 'All types' ? typeFilter : '',
+        search: searchQuery,
+      });
+
+      const response = await fetch(`/api/articles/stats?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch article stats');
+      }
+
+      const data: ArticleStats = await response.json();
+      setPlaces(data.articles);
+      setTotals(data.totals);
+    } catch (error) {
+      console.error('Error fetching article stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data on mount and when filters change
+  useEffect(() => {
+    fetchStats();
+  }, [dateRange, typeFilter, searchQuery]);
 
   // Format number with K only if >= 1000
   const formatCount = (count: number): string => {
@@ -61,18 +93,9 @@ export default function PlacesPage() {
     return count.toString();
   };
 
-  const filteredPlaces = places.filter(place => {
-    const matchesSearch = place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         place.where.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === 'All types' || place.type === typeFilter;
-    const matchesFeatured = showFilter === 'Show all' || 
-                           (showFilter === 'Featured only' && place.featured);
-    return matchesSearch && matchesType && matchesFeatured;
-  });
-
-  const totalPages = 21; // Simulated total pages
+  const totalPages = Math.ceil(places.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const displayedPlaces = filteredPlaces.slice(startIndex, startIndex + itemsPerPage);
+  const displayedPlaces = places.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -84,18 +107,62 @@ export default function PlacesPage() {
         {/* Controls Row */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-              {dateRange}
-              <ChevronDown className="h-4 w-4" />
-            </button>
-            <button className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-              {typeFilter}
-              <ChevronDown className="h-4 w-4" />
-            </button>
-            <button className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-              {showFilter}
-              <ChevronDown className="h-4 w-4" />
-            </button>
+            {/* Date Range Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowDateDropdown(!showDateDropdown)}
+                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {dateRangeLabel}
+                <ChevronDown className="h-4 w-4" />
+              </button>
+              {showDateDropdown && (
+                <div className="absolute left-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg z-10">
+                  {dateRangeOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setDateRange(option.value);
+                        setDateRangeLabel(option.label);
+                        setShowDateDropdown(false);
+                        setCurrentPage(1);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Type Filter Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {typeFilter}
+                <ChevronDown className="h-4 w-4" />
+              </button>
+              {showTypeDropdown && (
+                <div className="absolute left-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg z-10">
+                  {typeOptions.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        setTypeFilter(option);
+                        setShowTypeDropdown(false);
+                        setCurrentPage(1);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -103,34 +170,39 @@ export default function PlacesPage() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search place name..."
+                placeholder="Search article name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="rounded-lg border border-gray-300 bg-white pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
-            <button className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-              Search
-            </button>
           </div>
         </div>
 
         {/* Stats */}
         <div className="mb-6 flex items-center gap-8">
           <div>
-            <p className="text-3xl font-bold text-gray-900">{formatCount(totalMentioned)}</p>
-            <p className="text-sm text-gray-600">Mentioned</p>
+            <p className="text-3xl font-bold text-gray-900">{formatCount(totals.totalMentioned)}</p>
+            <p className="text-sm text-gray-600">Total Mentions</p>
           </div>
           <div>
-            <p className="text-3xl font-bold text-gray-900">{formatCount(totalFeatured)}</p>
-            <p className="text-sm text-gray-600">Featured</p>
+            <p className="text-3xl font-bold text-gray-900">{formatCount(totals.totalViews)}</p>
+            <p className="text-sm text-gray-600">Total Views</p>
           </div>
           <div>
-            <p className="text-3xl font-bold text-gray-900">{formatCount(totalHandoffs)}</p>
-            <p className="text-sm text-gray-600">Handoffs</p>
+            <p className="text-3xl font-bold text-gray-900">{formatCount(totals.uniqueArticles)}</p>
+            <p className="text-sm text-gray-600">Unique Articles</p>
           </div>
-          <div className="ml-auto">
-            <button className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50">
+          <div className="ml-auto flex gap-2">
+            <button 
+              onClick={fetchStats}
+              disabled={loading}
+              className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
+              title="Refresh data"
+            >
+              <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
               <Download className="h-5 w-5" />
             </button>
           </div>
@@ -141,20 +213,11 @@ export default function PlacesPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                  #
-                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                   Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Where
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
-                  Featured
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                   Mentions
@@ -162,69 +225,72 @@ export default function PlacesPage() {
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   Views
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
-                  Handoffs
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {displayedPlaces.map((place) => (
-                <tr
-                  key={place.id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {place.number}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                    {place.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {place.type}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {place.where}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    {place.featured && (
-                      <Check className="h-4 w-4 text-gray-400 mx-auto" />
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                    {place.mentions}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                    {place.views}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                    {place.handoffs}
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-500">
+                    <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+                    Loading article stats...
                   </td>
                 </tr>
-              ))}
+              ) : displayedPlaces.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-500">
+                    No articles found. Try adjusting your filters or search query.
+                  </td>
+                </tr>
+              ) : (
+                displayedPlaces.map((place, index) => (
+                  <tr
+                    key={place.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                      <div>
+                        <div className="font-medium">{place.name}</div>
+                        <div className="text-xs text-gray-500">{place.slug}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {place.type}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                      {place.mentions}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                      {place.views}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
-        <div className="mt-6 flex items-center justify-center gap-2">
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            ‹
-          </button>
-          <span className="px-4 py-2 text-sm text-gray-600">
-            {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            ›
-          </button>
-        </div>
+        {totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-center gap-2">
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ‹
+            </button>
+            <span className="px-4 py-2 text-sm text-gray-600">
+              {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ›
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
