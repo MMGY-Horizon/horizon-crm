@@ -5,37 +5,31 @@ import { useRouter } from 'next/navigation';
 import { RefreshCw, Mail, Calendar } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 
-interface User {
+interface Visitor {
   id: string;
   email: string;
   name: string | null;
-  role: string;
-  provider: string | null;
+  source: string | null;
   created_at: string;
-  last_sign_in_at: string | null;
+  last_active_at: string | null;
 }
 
 export default function UsersPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Visitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/users');
+      const response = await fetch('/api/visitors');
       if (response.ok) {
         const data = await response.json();
-        // Filter to only show visitors (exclude team members)
-        const allUsers = data.users || [];
-        const visitors = allUsers.filter((user: User) => 
-          user.role === 'Visitor' || user.provider === 'newsletter'
-        );
-        setUsers(visitors);
+        setUsers(data.visitors || []);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error fetching visitors:', error);
     } finally {
       setLoading(false);
     }
@@ -45,12 +39,12 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  // Filter users
-  const filteredUsers = users.filter(user => {
+  // Filter visitors
+  const filteredUsers = users.filter(visitor => {
     const matchesSearch = 
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.id.toLowerCase().includes(searchTerm.toLowerCase());
+      visitor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (visitor.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      visitor.id.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesSearch;
   });
@@ -130,40 +124,40 @@ export default function UsersPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredUsers.map((user) => (
+                  filteredUsers.map((visitor) => (
                     <tr 
-                      key={user.id}
+                      key={visitor.id}
                       className="hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-6 py-4 text-sm">
                         <button
-                          onClick={() => router.push(`/admin/users/${user.id}`)}
+                          onClick={() => router.push(`/admin/users/${visitor.id}`)}
                           className="font-mono text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
                         >
-                          {user.id.slice(0, 8)}...
+                          {visitor.id.slice(0, 8)}...
                         </button>
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <div className="flex items-center gap-2">
                           <Mail className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-900">{user.email}</span>
+                          <span className="text-gray-900">{visitor.email}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {user.name || '-'}
+                        {visitor.name || '-'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 capitalize">
-                        {user.provider || '-'}
+                        {visitor.source || '-'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
-                          {new Date(user.created_at).toLocaleDateString()}
+                          {new Date(visitor.created_at).toLocaleDateString()}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {user.last_sign_in_at 
-                          ? new Date(user.last_sign_in_at).toLocaleDateString()
+                        {visitor.last_active_at 
+                          ? new Date(visitor.last_active_at).toLocaleDateString()
                           : 'Never'}
                       </td>
                     </tr>

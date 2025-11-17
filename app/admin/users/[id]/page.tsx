@@ -5,14 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, MessageSquare, Eye, Mail, Calendar, RefreshCw } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 
-interface User {
+interface Visitor {
   id: string;
   email: string;
   name: string | null;
-  role: string;
-  provider: string;
+  source: string;
   created_at: string;
-  last_sign_in_at: string | null;
+  last_active_at: string | null;
 }
 
 interface Chat {
@@ -35,38 +34,38 @@ interface ArticleView {
 export default function UserDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Visitor | null>(null);
   const [chats, setChats] = useState<Chat[]>([]);
   const [views, setViews] = useState<ArticleView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const userId = params.id as string;
+  const visitorId = params.id as string;
 
   const fetchUserData = async () => {
     setLoading(true);
     try {
-      // Fetch user details
-      const userResponse = await fetch(`/api/users/${userId}`);
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        setUser(userData.user);
+      // Fetch visitor details
+      const visitorResponse = await fetch(`/api/visitors/${visitorId}`);
+      if (visitorResponse.ok) {
+        const visitorData = await visitorResponse.json();
+        setUser(visitorData.visitor);
       }
 
-      // Fetch user's chats
-      const chatsResponse = await fetch(`/api/users/${userId}/chats`);
+      // Fetch visitor's chats
+      const chatsResponse = await fetch(`/api/visitors/${visitorId}/chats`);
       if (chatsResponse.ok) {
         const chatsData = await chatsResponse.json();
         setChats(chatsData.chats || []);
       }
 
-      // Fetch user's article views
-      const viewsResponse = await fetch(`/api/users/${userId}/views`);
+      // Fetch visitor's article views
+      const viewsResponse = await fetch(`/api/visitors/${visitorId}/views`);
       if (viewsResponse.ok) {
         const viewsData = await viewsResponse.json();
         setViews(viewsData.views || []);
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('Error fetching visitor data:', error);
     } finally {
       setLoading(false);
     }
@@ -74,7 +73,7 @@ export default function UserDetailPage() {
 
   useEffect(() => {
     fetchUserData();
-  }, [userId]);
+  }, [visitorId]);
 
   if (loading) {
     return (
@@ -152,14 +151,8 @@ export default function UserDetailPage() {
                   <Mail className="h-4 w-4" />
                   {user.email}
                 </div>
-                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  user.role === 'Admin' 
-                    ? 'bg-purple-100 text-purple-800'
-                    : user.role === 'Visitor'
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {user.role}
+                <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                  {user.source}
                 </span>
               </div>
             </div>
@@ -196,8 +189,8 @@ export default function UserDetailPage() {
               <h3 className="text-sm font-semibold text-gray-700">Last Active</h3>
             </div>
             <p className="text-lg font-semibold text-gray-900">
-              {user.last_sign_in_at 
-                ? new Date(user.last_sign_in_at).toLocaleDateString()
+              {user.last_active_at 
+                ? new Date(user.last_active_at).toLocaleDateString()
                 : 'Never'}
             </p>
           </div>
