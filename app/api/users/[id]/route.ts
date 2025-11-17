@@ -6,7 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 // PATCH /api/users/[id] - Update user
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,7 +19,7 @@ export async function PATCH(
     }
 
     const { name, role } = await request.json();
-    const userId = params.id;
+    const { id: userId } = await params;
 
     const { data: updatedUser, error } = await supabaseAdmin
       .from('users')
@@ -52,7 +52,7 @@ export async function PATCH(
 // DELETE /api/users/[id] - Delete user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -64,7 +64,7 @@ export async function DELETE(
       );
     }
 
-    const userId = params.id;
+    const { id: userId } = await params;
 
     const { error } = await supabaseAdmin
       .from('users')
@@ -74,7 +74,7 @@ export async function DELETE(
     if (error) {
       console.error('Error deleting user:', error);
       return NextResponse.json(
-        { error: 'Failed to delete user' },
+        { error: `Failed to delete user: ${error.message || JSON.stringify(error)}` },
         { status: 500 }
       );
     }
