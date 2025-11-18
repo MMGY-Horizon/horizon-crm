@@ -134,23 +134,30 @@ export async function enrichVisitor(visitorId: string, email: string): Promise<b
 
     const person = result.data.person;
 
+    // Build the full name, but only if we have valid first/last names
+    let fullName = person.name;
+    if (!fullName && (person.first_name || person.last_name)) {
+      const parts = [person.first_name, person.last_name].filter(Boolean);
+      fullName = parts.length > 0 ? parts.join(' ') : null;
+    }
+
     // Update visitor with Apollo data
     const { error: updateError } = await supabaseAdmin
       .from('visitors')
       .update({
         apollo_id: person.id,
-        first_name: person.first_name,
-        last_name: person.last_name,
-        name: person.name || `${person.first_name} ${person.last_name}`.trim(),
-        linkedin_url: person.linkedin_url,
-        title: person.title,
-        headline: person.headline,
-        city: person.city,
-        state: person.state,
-        country: person.country,
-        company_name: person.organization?.name,
-        company_website: person.organization?.website_url,
-        company_industry: person.organization?.industry,
+        first_name: person.first_name || null,
+        last_name: person.last_name || null,
+        name: fullName || null,
+        linkedin_url: person.linkedin_url || null,
+        title: person.title || null,
+        headline: person.headline || null,
+        city: person.city || null,
+        state: person.state || null,
+        country: person.country || null,
+        company_name: person.organization?.name || null,
+        company_website: person.organization?.website_url || null,
+        company_industry: person.organization?.industry || null,
         apollo_enriched_at: now,
         apollo_last_synced_at: now,
       })

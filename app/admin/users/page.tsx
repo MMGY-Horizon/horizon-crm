@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, Mail, Calendar } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
+import Toast from '@/components/Toast';
 
 interface Visitor {
   id: string;
@@ -20,6 +21,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [enriching, setEnriching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -50,15 +52,36 @@ export default function UsersPage() {
         // Refresh the user list after enrichment
         await fetchUsers();
 
-        // Show success message
-        alert(`Successfully enriched ${data.enriched} visitors!\n\nTotal: ${data.total}\nEnriched: ${data.enriched}\nFailed: ${data.failed}`);
+        // Show success toast
+        if (data.total === 0) {
+          setToast({
+            message: 'All visitors are already enriched!',
+            type: 'success',
+          });
+        } else if (data.enriched > 0) {
+          setToast({
+            message: `Successfully enriched ${data.enriched} of ${data.total} visitors`,
+            type: 'success',
+          });
+        } else {
+          setToast({
+            message: `No visitors could be enriched (${data.failed} failed)`,
+            type: 'error',
+          });
+        }
       } else {
         const error = await response.json();
-        alert(`Enrichment failed: ${error.error}`);
+        setToast({
+          message: `Enrichment failed: ${error.error}`,
+          type: 'error',
+        });
       }
     } catch (error) {
       console.error('Error enriching visitors:', error);
-      alert('Failed to enrich visitors. Please try again.');
+      setToast({
+        message: 'Failed to enrich visitors. Please try again.',
+        type: 'error',
+      });
     } finally {
       setEnriching(false);
     }
@@ -80,6 +103,14 @@ export default function UsersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       <AdminHeader />
       
       <div className="mx-auto max-w-7xl px-6 py-8">
