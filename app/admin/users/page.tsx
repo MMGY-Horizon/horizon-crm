@@ -18,6 +18,7 @@ export default function UsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<Visitor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [enriching, setEnriching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchUsers = async () => {
@@ -32,6 +33,34 @@ export default function UsersPage() {
       console.error('Error fetching visitors:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const enrichUnenrichedVisitors = async () => {
+    setEnriching(true);
+    try {
+      const response = await fetch('/api/visitors/enrich', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Enrichment results:', data);
+
+        // Refresh the user list after enrichment
+        await fetchUsers();
+
+        // Show success message
+        alert(`Successfully enriched ${data.enriched} visitors!\n\nTotal: ${data.total}\nEnriched: ${data.enriched}\nFailed: ${data.failed}`);
+      } else {
+        const error = await response.json();
+        alert(`Enrichment failed: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error enriching visitors:', error);
+      alert('Failed to enrich visitors. Please try again.');
+    } finally {
+      setEnriching(false);
     }
   };
 
@@ -63,12 +92,12 @@ export default function UsersPage() {
             </p>
           </div>
           <button
-            onClick={fetchUsers}
-            disabled={loading}
+            onClick={enrichUnenrichedVisitors}
+            disabled={loading || enriching}
             className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
-            title="Refresh visitors"
+            title="Enrich unenriched visitors with Apollo data"
           >
-            <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-5 w-5 ${enriching ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
