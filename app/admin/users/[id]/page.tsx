@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MessageSquare, Eye, Mail, Calendar, RefreshCw, ChevronDown, ChevronRight, User, Bot } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Eye, Mail, Calendar, RefreshCw, ChevronDown, ChevronRight, User, Bot, Briefcase, MapPin, Linkedin, Building2, Globe } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 
 interface Visitor {
@@ -12,6 +12,21 @@ interface Visitor {
   source: string;
   created_at: string;
   last_active_at: string | null;
+  // Apollo enrichment data
+  apollo_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  linkedin_url: string | null;
+  title: string | null;
+  headline: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  company_name: string | null;
+  company_website: string | null;
+  company_industry: string | null;
+  apollo_enriched_at: string | null;
+  apollo_last_synced_at: string | null;
 }
 
 interface Chat {
@@ -218,6 +233,132 @@ export default function UserDetailPage() {
             </button>
           </div>
         </div>
+
+        {/* Apollo Enrichment Data */}
+        {user.apollo_enriched_at && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Enrichment Data
+              </h2>
+              <span className="text-xs text-gray-500">
+                Synced {new Date(user.apollo_enriched_at).toLocaleDateString()}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Personal Info */}
+              {(user.title || user.headline || user.linkedin_url) && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Personal Information
+                  </h3>
+                  <div className="space-y-2">
+                    {user.title && (
+                      <div className="flex items-start gap-2">
+                        <Briefcase className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500">Title</p>
+                          <p className="text-sm text-gray-900">{user.title}</p>
+                        </div>
+                      </div>
+                    )}
+                    {user.headline && (
+                      <div className="flex items-start gap-2">
+                        <User className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500">Headline</p>
+                          <p className="text-sm text-gray-900">{user.headline}</p>
+                        </div>
+                      </div>
+                    )}
+                    {user.linkedin_url && (
+                      <div className="flex items-start gap-2">
+                        <Linkedin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500">LinkedIn</p>
+                          <a
+                            href={user.linkedin_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                          >
+                            View Profile
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Company Info */}
+              {(user.company_name || user.company_industry || user.company_website) && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Company Information
+                  </h3>
+                  <div className="space-y-2">
+                    {user.company_name && (
+                      <div className="flex items-start gap-2">
+                        <Building2 className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500">Company</p>
+                          <p className="text-sm text-gray-900">{user.company_name}</p>
+                        </div>
+                      </div>
+                    )}
+                    {user.company_industry && (
+                      <div className="flex items-start gap-2">
+                        <Briefcase className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500">Industry</p>
+                          <p className="text-sm text-gray-900">{user.company_industry}</p>
+                        </div>
+                      </div>
+                    )}
+                    {user.company_website && (
+                      <div className="flex items-start gap-2">
+                        <Globe className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-500">Website</p>
+                          <a
+                            href={user.company_website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                          >
+                            {user.company_website.replace(/^https?:\/\//, '')}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Location Info */}
+              {(user.city || user.state || user.country) && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Location
+                  </h3>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-gray-900">
+                        {[user.city, user.state, user.country].filter(Boolean).join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
