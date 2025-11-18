@@ -112,7 +112,7 @@ export default function UserCompositionCharts() {
                   innerRadius={80}
                   outerRadius={120}
                   dataKey="value"
-                  label={(entry) => `${entry.percentage}%`}
+                  label={(entry: any) => `${entry.percentage}%`}
                 >
                   {deviceData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
