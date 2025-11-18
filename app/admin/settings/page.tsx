@@ -35,8 +35,8 @@ export default function SettingsPage() {
           const data = await response.json();
           setSettings(data);
           setOrganizationName(data.organization_name);
-          setLocation(data.location || '');
-          setWebsiteUrl(data.website_url || '');
+          setLocation(data.location);
+          setWebsiteUrl(data.website_url);
         } else {
           console.error('Failed to fetch settings');
         }
@@ -86,8 +86,8 @@ export default function SettingsPage() {
   const handleCancel = () => {
     if (settings) {
       setOrganizationName(settings.organization_name);
-      setLocation(settings.location || '');
-      setWebsiteUrl(settings.website_url || '');
+      setLocation(settings.location);
+      setWebsiteUrl(settings.website_url);
     }
   };
 
@@ -175,7 +175,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                value={settings?.slug || ''}
+                value={settings?.slug ?? ''}
                 disabled
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
               />
@@ -223,7 +223,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                value={settings?.status || ''}
+                value={settings?.status ?? ''}
                 disabled
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 capitalize"
               />
@@ -247,7 +247,7 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2">
                 <input
                   type={showApiKey ? 'text' : 'password'}
-                  value={settings?.api_key || ''}
+                  value={settings?.api_key ?? ''}
                   disabled
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 font-mono text-sm"
                 />
