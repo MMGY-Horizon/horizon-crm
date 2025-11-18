@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getUserOrganization } from '@/lib/get-user-organization';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,14 +35,25 @@ function generateDateLabels(days: number = 90): string[] {
 }
 
 export async function GET(request: NextRequest) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
     const days = 90; // Last 90 days
     const startDate = getDateRange(days);
 
-    // Get all chats from the last 90 days
+    // Get all chats from the last 90 days for this organization
     const { data: chats, error: chatsError } = await supabaseAdmin
       .from('chats')
       .select('session_id, created_at')
+      .eq('organization_id', organizationId)
       .gte('created_at', startDate.toISOString());
 
     if (chatsError) {
@@ -73,10 +85,11 @@ export async function GET(request: NextRequest) {
       chatToSession.set(chat.session_id, chat.session_id);
     });
 
-    // Get all visitor registrations from the last 90 days
+    // Get all visitor registrations from the last 90 days for this organization
     const { data: visitors, error: visitorsError } = await supabaseAdmin
       .from('visitors')
       .select('created_at')
+      .eq('organization_id', organizationId)
       .gte('created_at', startDate.toISOString());
 
     if (visitorsError) {

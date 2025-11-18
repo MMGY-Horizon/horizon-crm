@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getUserOrganization } from '@/lib/get-user-organization';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,15 +35,42 @@ function generateDateLabels(days: number = 90): string[] {
 }
 
 export async function GET(request: NextRequest) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
     const days = 90; // Last 90 days
     const startDate = getDateRange(days);
 
-    // Get all user messages from the last 90 days
+    // First get chats for this organization
+    const { data: orgChats, error: chatsError } = await supabaseAdmin
+      .from('chats')
+      .select('chat_id')
+      .eq('organization_id', organizationId);
+
+    if (chatsError) {
+      console.error('Error fetching chats:', chatsError);
+      return NextResponse.json(
+        { error: 'Failed to fetch chats' },
+        { status: 500 }
+      );
+    }
+
+    const chatIds = orgChats?.map(c => c.chat_id) || [];
+
+    // Get all user messages from the last 90 days for this org's chats
     const { data: messages, error: messagesError } = await supabaseAdmin
       .from('messages')
       .select('created_at, role')
       .eq('role', 'user')
+      .in('chat_id', chatIds.length > 0 ? chatIds : [''])
       .gte('created_at', startDate.toISOString());
 
     if (messagesError) {
@@ -68,10 +96,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all article views from the last 90 days
+    // Get all article views from the last 90 days for this organization
     const { data: articleViews, error: viewsError } = await supabaseAdmin
       .from('article_views')
       .select('viewed_at')
+      .eq('organization_id', organizationId)
       .gte('viewed_at', startDate.toISOString());
 
     if (viewsError) {
