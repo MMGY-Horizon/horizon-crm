@@ -121,10 +121,11 @@ export async function enrichVisitor(visitorId: string, email: string): Promise<b
     if (!result.success || !result.data?.person) {
       console.log(`Apollo enrichment failed or no data for ${email}:`, result.error);
 
-      // Update last_synced_at to track that we attempted enrichment
+      // Mark as enriched with no data found (prevents future attempts)
       await supabaseAdmin
         .from('visitors')
         .update({
+          apollo_enriched_at: now, // Mark as attempted so we don't keep trying
           apollo_last_synced_at: now,
         })
         .eq('id', visitorId);

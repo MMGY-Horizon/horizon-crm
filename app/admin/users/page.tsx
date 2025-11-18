@@ -204,7 +204,7 @@ export default function UsersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {visitor.name || '-'}
+                        {visitor.name && visitor.name !== 'null null' ? visitor.name : '-'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 capitalize">
                         {visitor.source || '-'}

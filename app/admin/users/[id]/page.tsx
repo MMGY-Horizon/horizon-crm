@@ -246,7 +246,19 @@ export default function UserDetailPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Check if any Apollo data exists */}
+            {!user.apollo_id && !user.title && !user.company_name && !user.city ? (
+              <div className="text-center py-8">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-3">
+                  <User className="h-6 w-6 text-gray-400" />
+                </div>
+                <p className="text-sm text-gray-600 mb-1">No enrichment data found</p>
+                <p className="text-xs text-gray-500">
+                  Apollo.io couldn't find additional information for this visitor
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Personal Info */}
               {(user.title || user.headline || user.linkedin_url) && (
                 <div>
@@ -357,6 +369,7 @@ export default function UserDetailPage() {
                 </div>
               )}
             </div>
+            )}
           </div>
         )}
 
