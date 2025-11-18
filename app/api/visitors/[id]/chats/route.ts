@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getUserOrganization } from '@/lib/get-user-organization';
 import { supabaseAdmin } from '@/lib/supabase';
 
 // GET /api/visitors/[id]/chats - Get visitor's chats
@@ -8,19 +7,41 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
+    const { id: visitorId } = await params;
+
+    // First verify the visitor belongs to this organization
+    const { data: visitor, error: visitorError } = await supabaseAdmin
+      .from('visitors')
+      .select('organization_id')
+      .eq('id', visitorId)
+      .single();
+
+    if (visitorError || !visitor) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: 'Visitor not found' },
+        { status: 404 }
       );
     }
 
-    const { id: visitorId } = await params;
+    if (visitor.organization_id !== organizationId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - visitor does not belong to your organization' },
+        { status: 403 }
+      );
+    }
 
-    // Fetch visitor's chats with message count
+    // Fetch visitor's chats with message count (already filtered by organization via visitor check)
     const { data: chats, error } = await supabaseAdmin
       .from('chats')
       .select(`

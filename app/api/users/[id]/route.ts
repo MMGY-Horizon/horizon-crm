@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getUserOrganization } from '@/lib/get-user-organization';
 import { supabaseAdmin } from '@/lib/supabase';
 
 // GET /api/users/[id] - Get user details
@@ -8,22 +7,24 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  // Get user's organization
+  const organizationId = await getUserOrganization();
 
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
+  try {
     const { id: userId } = await params;
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('id', userId)
+      .eq('organization_id', organizationId)
       .single();
 
     if (error) {
@@ -49,16 +50,17 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  // Get user's organization
+  const organizationId = await getUserOrganization();
 
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
+  try {
     const { name, role } = await request.json();
     const { id: userId } = await params;
 
@@ -69,6 +71,7 @@ export async function PATCH(
         role: role !== undefined ? role : undefined,
       })
       .eq('id', userId)
+      .eq('organization_id', organizationId)
       .select()
       .single();
 
@@ -95,22 +98,24 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  // Get user's organization
+  const organizationId = await getUserOrganization();
 
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
+  try {
     const { id: userId } = await params;
 
     const { error } = await supabaseAdmin
       .from('users')
       .delete()
-      .eq('id', userId);
+      .eq('id', userId)
+      .eq('organization_id', organizationId);
 
     if (error) {
       console.error('Error deleting user:', error);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getUserOrganization } from '@/lib/get-user-organization';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,11 +8,22 @@ const supabaseAdmin = createClient(
 );
 
 export async function GET(request: NextRequest) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
-    // Get all chats (represents all sessions that started a chat)
+    // Get all chats for this organization (represents all sessions that started a chat)
     const { data: allChats, error: chatsError } = await supabaseAdmin
       .from('chats')
-      .select('chat_id, session_id');
+      .select('chat_id, session_id')
+      .eq('organization_id', organizationId);
 
     if (chatsError) {
       console.error('Error fetching chats:', chatsError);
@@ -23,12 +35,15 @@ export async function GET(request: NextRequest) {
 
     const totalChats = allChats?.length || 0;
     const uniqueSessions = new Set(allChats?.map(c => c.session_id) || []).size;
+    const chatIds = allChats?.map(c => c.chat_id) || [];
 
     // Get chats with at least one user message (engaged users)
+    // Filter messages by chat_ids from this organization
     const { data: messagesData, error: messagesError } = await supabaseAdmin
       .from('messages')
       .select('chat_id')
-      .eq('role', 'user');
+      .eq('role', 'user')
+      .in('chat_id', chatIds.length > 0 ? chatIds : ['']);
 
     if (messagesError) {
       console.error('Error fetching messages:', messagesError);
@@ -37,10 +52,11 @@ export async function GET(request: NextRequest) {
     const chatsWithMessages = new Set(messagesData?.map(m => m.chat_id) || []);
     const engagedChats = chatsWithMessages.size;
 
-    // Get visitors (newsletter registrations)
+    // Get visitors (newsletter registrations) for this organization
     const { count: totalRegistrations, error: visitorsError } = await supabaseAdmin
       .from('visitors')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId);
 
     if (visitorsError) {
       console.error('Error counting visitors:', visitorsError);
@@ -60,10 +76,11 @@ export async function GET(request: NextRequest) {
     const sessionsWithClicks = new Set(clicksData?.map(c => c.session_id).filter(Boolean) || []).size;
     const chatsWithClicks = new Set(clicksData?.map(c => c.chat_id).filter(Boolean) || []).size;
 
-    // Get article views
+    // Get article views for this organization
     const { data: viewsData, error: viewsError } = await supabaseAdmin
       .from('article_views')
-      .select('chat_id, session_id');
+      .select('chat_id, session_id')
+      .eq('organization_id', organizationId);
 
     if (viewsError) {
       console.error('Error fetching views:', viewsError);

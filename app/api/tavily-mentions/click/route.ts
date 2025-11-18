@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { authorizeRequest } from '@/lib/api-auth';
 
 // POST /api/tavily-mentions/click - Track when an article is clicked
 export async function POST(request: NextRequest) {
   try {
-    // Verify API key
-    const apiKey = request.headers.get('x-api-key');
-
-    if (!apiKey || apiKey !== process.env.CRM_API_KEY) {
+    // Verify API key and get organization
+    const auth = await authorizeRequest(request);
+    if (!auth.authorized || !auth.organizationId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -30,11 +30,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find the most recent mention for this article in this session/chat
+    // Find the most recent mention for this article in this session/chat and organization
     let query = supabaseAdmin
       .from('tavily_mentions')
       .select('*')
       .eq('article_url', articleUrl)
+      .eq('organization_id', auth.organizationId)
       .order('mentioned_at', { ascending: false })
       .limit(1);
 

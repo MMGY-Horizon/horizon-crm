@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { authorizeRequest } from '@/lib/api-auth';
 
 // Handle CORS preflight
 export async function OPTIONS(request: NextRequest) {
@@ -8,13 +9,24 @@ export async function OPTIONS(request: NextRequest) {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
     },
   });
 }
 
 // POST /api/users/identify - Identify/create user from newsletter signup
 export async function POST(request: NextRequest) {
+  // Verify API key and get organization
+  const auth = await authorizeRequest(request);
+  if (!auth.authorized || !auth.organizationId) {
+    const errorResponse = NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+    errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+    return errorResponse;
+  }
+
   try {
     const { email, session_id, chat_id, source } = await request.json();
 
@@ -32,12 +44,13 @@ export async function POST(request: NextRequest) {
     let foundBySession = false;
 
     // First, check if a user already exists with this session_id
-    // Check in chats table
+    // Check in chats table for this organization
     if (session_id) {
       const { data: sessionChat, error: chatError } = await supabaseAdmin
         .from('chats')
         .select('user_id')
         .eq('session_id', session_id)
+        .eq('organization_id', auth.organizationId)
         .not('user_id', 'is', null)
         .limit(1)
         .maybeSingle();
@@ -47,6 +60,7 @@ export async function POST(request: NextRequest) {
           .from('users')
           .select('*')
           .eq('id', sessionChat.user_id)
+          .eq('organization_id', auth.organizationId)
           .single();
 
         if (!userError && user) {
@@ -55,12 +69,13 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // If not found in chats, check article_views
+      // If not found in chats, check article_views for this organization
       if (!existingUser) {
         const { data: sessionView, error: viewError } = await supabaseAdmin
           .from('article_views')
           .select('user_id')
           .eq('session_id', session_id)
+          .eq('organization_id', auth.organizationId)
           .not('user_id', 'is', null)
           .limit(1)
           .maybeSingle();
@@ -70,6 +85,7 @@ export async function POST(request: NextRequest) {
             .from('users')
             .select('*')
             .eq('id', sessionView.user_id)
+            .eq('organization_id', auth.organizationId)
             .single();
 
           if (!userError && user) {
@@ -100,12 +116,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If no user found by session, check by email
+    // If no user found by session, check by email for this organization
     if (!existingUser) {
       const result = await supabaseAdmin
         .from('users')
         .select('*')
         .eq('email', email)
+        .eq('organization_id', auth.organizationId)
         .maybeSingle();
       
       existingUser = result.data;
@@ -153,7 +170,7 @@ export async function POST(request: NextRequest) {
         userId = updatedUser.id;
       }
     } else {
-      // Create new user
+      // Create new user with organization_id
       const { data: newUser, error: insertError } = await supabaseAdmin
         .from('users')
         .insert({
@@ -161,6 +178,7 @@ export async function POST(request: NextRequest) {
           role: 'Visitor', // Default role for identified visitors
           provider: source || 'newsletter',
           last_sign_in_at: new Date().toISOString(),
+          organization_id: auth.organizationId,
         })
         .select()
         .single();

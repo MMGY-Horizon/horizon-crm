@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { authorizeRequest } from "@/lib/api-auth";
 
 interface LogMessagePayload {
   chatId: string;
@@ -8,16 +9,9 @@ interface LogMessagePayload {
   metadata?: Record<string, unknown>;
 }
 
-function authorizeRequest(request: Request) {
-  const apiKey = request.headers.get("x-api-key");
-  if (!apiKey || apiKey !== process.env.CRM_API_KEY) {
-    return false;
-  }
-  return true;
-}
-
 export async function POST(request: Request) {
-  if (!authorizeRequest(request)) {
+  const auth = await authorizeRequest(request);
+  if (!auth.authorized || !auth.organizationId) {
     console.warn("[CRM] Unauthorized message logging attempt");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

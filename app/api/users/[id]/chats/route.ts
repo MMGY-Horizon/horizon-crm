@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getUserOrganization } from '@/lib/get-user-organization';
 import { supabaseAdmin } from '@/lib/supabase';
 
 // GET /api/users/[id]/chats - Get user's chats
@@ -8,19 +7,41 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
+    const { id: userId } = await params;
+
+    // First verify the user belongs to this organization
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('organization_id')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
-    const { id: userId } = await params;
+    if (user.organization_id !== organizationId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - user does not belong to your organization' },
+        { status: 403 }
+      );
+    }
 
-    // Fetch user's chats with message count
+    // Fetch user's chats with message count (already filtered by organization via user check)
     const { data: chats, error } = await supabaseAdmin
       .from('chats')
       .select(`

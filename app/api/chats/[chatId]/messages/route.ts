@@ -1,12 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getUserOrganization } from '@/lib/get-user-organization';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ chatId: string }> }
 ) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
     const { chatId } = await params;
+
+    // First verify the chat belongs to this organization
+    const { data: chat, error: chatError } = await supabaseAdmin
+      .from('chats')
+      .select('organization_id')
+      .eq('chat_id', chatId)
+      .single();
+
+    if (chatError || !chat) {
+      return NextResponse.json(
+        { error: 'Chat not found' },
+        { status: 404 }
+      );
+    }
+
+    if (chat.organization_id !== organizationId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - chat does not belong to your organization' },
+        { status: 403 }
+      );
+    }
 
     const { data, error } = await supabaseAdmin
       .from('messages')

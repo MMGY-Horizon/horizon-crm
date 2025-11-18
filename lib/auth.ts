@@ -34,7 +34,30 @@ export const authOptions: NextAuthOptions = {
               })
               .eq('email', user.email);
           } else {
-            // Create new user
+            // Create a new organization for the new user
+            const orgName = user.email?.split('@')[0] || 'New Organization';
+            const orgSlug = `org-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+            // Generate API key using database function
+            const { data: apiKeyData } = await supabaseAdmin.rpc('generate_api_key');
+            const apiKey = apiKeyData || `hmz_${Math.random().toString(36).substr(2, 32)}`;
+
+            const { data: newOrg, error: orgError } = await supabaseAdmin
+              .from('organization_settings')
+              .insert({
+                organization_name: orgName,
+                slug: orgSlug,
+                api_key: apiKey,
+              })
+              .select()
+              .single();
+
+            if (orgError || !newOrg) {
+              console.error('Failed to create organization:', orgError);
+              return false;
+            }
+
+            // Create new user with their own organization_id
             await supabaseAdmin
               .from('users')
               .insert({
@@ -43,12 +66,14 @@ export const authOptions: NextAuthOptions = {
                 image: user.image || '',
                 provider: account.provider,
                 provider_id: account.providerAccountId,
-                role: 'Member', // Default role
+                role: 'Admin', // New users are admins of their own org
+                organization_id: newOrg.id,
                 last_sign_in_at: new Date().toISOString(),
               });
           }
         } catch (error) {
           console.error('Error saving user to database:', error);
+          return false; // Prevent sign in on error
         }
       }
       return true;

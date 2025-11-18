@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { authorizeRequest } from '@/lib/api-auth';
+import { getUserOrganization } from '@/lib/get-user-organization';
 
 // POST /api/tavily-mentions - Log Tavily search results as mentions
 export async function POST(request: NextRequest) {
   try {
-    // Verify API key
-    const apiKey = request.headers.get('x-api-key');
-
-    if (!apiKey || apiKey !== process.env.CRM_API_KEY) {
+    // Verify API key and get organization
+    const auth = await authorizeRequest(request);
+    if (!auth.authorized || !auth.organizationId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert all mentions
+    // Insert all mentions with organization_id
     const mentionsToInsert = mentions.map((mention) => ({
       article_url: mention.url,
       article_title: mention.title,
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
       search_query: searchQuery || null,
       mentioned_at: new Date().toISOString(),
       clicked: false,
+      organization_id: auth.organizationId,
       metadata: {
         score: mention.score,
         content: mention.content?.substring(0, 500), // Store first 500 chars
@@ -77,6 +79,16 @@ export async function POST(request: NextRequest) {
 
 // GET /api/tavily-mentions - Get all mentions with stats
 export async function GET(request: NextRequest) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
     const searchParams = request.url.split('?')[1];
     const params = new URLSearchParams(searchParams);
@@ -86,6 +98,7 @@ export async function GET(request: NextRequest) {
     let query = supabaseAdmin
       .from('tavily_mentions')
       .select('*')
+      .eq('organization_id', organizationId)
       .order('mentioned_at', { ascending: false });
 
     if (visitorId) {

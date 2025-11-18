@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { authorizeRequest } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify API key
-    const apiKey = request.headers.get('x-api-key');
-    if (!apiKey || apiKey !== process.env.CRM_API_KEY) {
+    // Verify API key and get organization
+    const auth = await authorizeRequest(request);
+    if (!auth.authorized || !auth.organizationId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -21,13 +22,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert all article mentions in batch
+    // Insert all article mentions in batch with organization_id
     const mentions = articles.map((article: any) => ({
       article_id: article.id,
       article_name: article.title,
       article_slug: article.slug,
       article_type: article.type || 'Article',
       chat_id: chatId || null,
+      organization_id: auth.organizationId,
     }));
 
     const { data, error } = await supabaseAdmin

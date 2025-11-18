@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { authorizeRequest } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
     console.log('[Article View API] Received request');
-    
-    // Verify API key
-    const apiKey = request.headers.get('x-api-key');
-    if (!apiKey || apiKey !== process.env.CRM_API_KEY) {
+
+    // Verify API key and get organization
+    const auth = await authorizeRequest(request);
+    if (!auth.authorized || !auth.organizationId) {
       console.error('[Article View API] Unauthorized - Invalid API key');
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
         article_type: articleType || 'Article',
         chat_id: chatId || null,
         session_id: sessionId || null,
+        organization_id: auth.organizationId,
       })
       .select()
       .single();

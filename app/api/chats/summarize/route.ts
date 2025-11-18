@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { authorizeRequest } from '@/lib/api-auth';
 import Groq from 'groq-sdk';
-
-// Verify API key authentication
-function verifyApiKey(request: NextRequest): boolean {
-  const apiKey = request.headers.get('x-api-key');
-  return apiKey === process.env.CRM_API_KEY;
-}
 
 interface ChatSummary {
   topicSummary: string;
@@ -113,7 +108,8 @@ Respond in JSON format:
 
 // POST /api/chats/summarize - Summarize a specific chat
 export async function POST(request: NextRequest) {
-  if (!verifyApiKey(request)) {
+  const auth = await authorizeRequest(request);
+  if (!auth.authorized || !auth.organizationId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -124,6 +120,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'chatId is required' },
         { status: 400 }
+      );
+    }
+
+    // First verify the chat belongs to this organization
+    const { data: chat, error: chatError } = await supabaseAdmin
+      .from('chats')
+      .select('organization_id')
+      .eq('chat_id', chatId)
+      .single();
+
+    if (chatError || !chat) {
+      return NextResponse.json(
+        { error: 'Chat not found' },
+        { status: 404 }
+      );
+    }
+
+    if (chat.organization_id !== auth.organizationId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - chat does not belong to your organization' },
+        { status: 403 }
       );
     }
 
@@ -187,15 +204,17 @@ export async function POST(request: NextRequest) {
 
 // GET /api/chats/summarize - Summarize all unsummarized chats or chats with new messages
 export async function GET(request: NextRequest) {
-  if (!verifyApiKey(request)) {
+  const auth = await authorizeRequest(request);
+  if (!auth.authorized || !auth.organizationId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    // Find all chats (we'll filter based on updated_at vs summarizedAt)
+    // Find all chats for this organization (we'll filter based on updated_at vs summarizedAt)
     const { data: chats, error: chatsError } = await supabaseAdmin
       .from('chats')
       .select('chat_id, metadata, updated_at')
+      .eq('organization_id', auth.organizationId)
       .limit(100); // Process up to 100 chats at a time
 
     if (chatsError) {

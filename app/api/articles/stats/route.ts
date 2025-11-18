@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getUserOrganization } from '@/lib/get-user-organization';
 
 export async function GET(request: NextRequest) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
     console.log('[Article Stats API] Starting request...');
     const { searchParams } = new URL(request.url);
@@ -19,6 +30,7 @@ export async function GET(request: NextRequest) {
     console.log('[Article Stats API] Querying mentions from:', dateThreshold.toISOString());
 
     // Build query for article mentions with date filter
+    // Note: article_mentions doesn't have organization_id yet, so filtering by organization not possible
     let mentionsQuery = supabaseAdmin
       .from('article_mentions')
       .select('article_id, article_name, article_slug, article_type')
@@ -46,10 +58,11 @@ export async function GET(request: NextRequest) {
 
     console.log('[Article Stats API] Mentions fetched:', mentions?.length || 0);
 
-    // Build query for article views with date filter
+    // Build query for article views with date filter, filtered by organization
     let viewsQuery = supabaseAdmin
       .from('article_views')
       .select('article_id, article_slug, article_name, article_type')
+      .eq('organization_id', organizationId)
       .gte('viewed_at', dateThreshold.toISOString());
 
     const { data: views, error: viewsError } = await viewsQuery;
