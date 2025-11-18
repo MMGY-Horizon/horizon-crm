@@ -1,69 +1,82 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// Generate sample data with spikes
-const generateDataWithSpikes = (points: number, baseMax: number, spikes: number[]) => {
-  const data = [];
-  const startDate = new Date('2025-10-14');
-  
-  for (let i = 0; i < points; i++) {
-    const date = new Date(startDate);
-    date.setDate(date.getDate() + i);
-    
-    let value = Math.floor(Math.random() * baseMax) + Math.floor(baseMax * 0.3);
-    
-    // Add spikes at specific points
-    if (spikes.includes(i)) {
-      value = value * 3 + Math.floor(Math.random() * baseMax);
-    }
-    
-    data.push({
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      value: value
-    });
-  }
-  
-  return data;
-};
+interface ChartDataPoint {
+  date: string;
+  value: number;
+}
 
-const onboardedData = generateDataWithSpikes(90, 80, [30, 60]);
-const chatMessagesData = generateDataWithSpikes(90, 100, [25, 55, 75]);
-const itinerariesData = generateDataWithSpikes(90, 60, [35, 65]);
-const partnerVisitsData = generateDataWithSpikes(90, 50, [28, 58, 80]);
+interface EventTotalsData {
+  chatMessages: ChartDataPoint[];
+  articleClicks: ChartDataPoint[];
+  articleViews: ChartDataPoint[];
+}
 
 export default function EventTotalsCharts() {
+  const [data, setData] = useState<EventTotalsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchEventTotals() {
+      try {
+        const response = await fetch('/api/analytics/event-totals');
+        if (response.ok) {
+          const eventData = await response.json();
+          setData(eventData);
+        } else {
+          console.error('Failed to fetch event totals');
+        }
+      } catch (error) {
+        console.error('Error fetching event totals:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchEventTotals();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold text-gray-900">Event Totals</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 h-64 flex items-center justify-center">
+            <p className="text-gray-500">Loading...</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-6 h-64 flex items-center justify-center">
+            <p className="text-gray-500">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold text-gray-900">Event Totals</h2>
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <p className="text-gray-500">No data available</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-900">Event Totals</h2>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Total Onboarded Opens */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Total Onboarded Opens</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={onboardedData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }}
-                interval={20}
-              />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Total User Chat Messages */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-sm font-semibold text-gray-700 mb-4">Total User Chat Messages</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chatMessagesData}>
+            <LineChart data={data.chatMessages}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="date" 
+              <XAxis
+                dataKey="date"
                 tick={{ fontSize: 12 }}
                 interval={20}
               />
@@ -74,38 +87,38 @@ export default function EventTotalsCharts() {
           </ResponsiveContainer>
         </div>
 
-        {/* Total Itineraries Created */}
+        {/* Total Article Clicks */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Total Itineraries Created</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Total Article Clicks</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={itinerariesData}>
+            <LineChart data={data.articleClicks}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="date" 
+              <XAxis
+                dataKey="date"
                 tick={{ fontSize: 12 }}
                 interval={20}
               />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Total OTA Partner Visits */}
+        {/* Total Article Views */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Total OTA Partner Visits</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Total Article Views</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={partnerVisitsData}>
+            <LineChart data={data.articleViews}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="date" 
+              <XAxis
+                dataKey="date"
                 tick={{ fontSize: 12 }}
                 interval={20}
               />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
