@@ -17,6 +17,12 @@ create index if not exists idx_visitors_created_at on public.visitors (created_a
 -- Enable RLS (Row Level Security)
 alter table public.visitors enable row level security;
 
+-- Drop existing policies if they exist
+drop policy if exists "Allow authenticated users to read visitors" on public.visitors;
+drop policy if exists "Service role can insert visitors" on public.visitors;
+drop policy if exists "Service role can update visitors" on public.visitors;
+drop policy if exists "Service role can delete visitors" on public.visitors;
+
 -- Create policy to allow authenticated users to read all visitors
 create policy "Allow authenticated users to read visitors"
   on public.visitors
