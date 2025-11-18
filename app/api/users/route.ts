@@ -44,11 +44,12 @@ export async function GET(request: NextRequest) {
 // POST /api/users - Add a new user (invite)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
+    // Get the logged-in user's organization
+    const organizationId = await getUserOrganization();
+
+    if (!organizationId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - no organization found' },
         { status: 401 }
       );
     }
@@ -62,21 +63,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists
+    // Check if user already exists in this organization
     const { data: existingUser } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('email', email)
+      .eq('organization_id', organizationId)
       .single();
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User already exists' },
+        { error: 'User already exists in your organization' },
         { status: 409 }
       );
     }
 
-    // Create new user
+    // Create new user with organization_id
     const { data: newUser, error } = await supabaseAdmin
       .from('users')
       .insert({
@@ -84,6 +86,7 @@ export async function POST(request: NextRequest) {
         name: name || '',
         role: role || 'Member',
         provider: 'invite', // Mark as invited user
+        organization_id: organizationId,
       })
       .select()
       .single();
