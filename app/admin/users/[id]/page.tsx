@@ -210,7 +210,7 @@ export default function UserDetailPage() {
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {user.name || user.email}
+                {user.name && user.name !== 'null null' ? user.name : user.email}
               </h1>
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
