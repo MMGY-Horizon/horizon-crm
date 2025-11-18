@@ -25,10 +25,9 @@ export async function GET(
       .from('chats')
       .select(`
         id,
+        chat_id,
         created_at,
-        topic_summary,
-        leadScore,
-        sentiment,
+        metadata,
         messages:messages(count)
       `)
       .eq('visitor_id', visitorId)
@@ -42,11 +41,15 @@ export async function GET(
       );
     }
 
-    // Transform the data to include message count
+    // Transform the data to include message count and extract metadata fields
     const chatsWithCount = chats?.map(chat => ({
-      ...chat,
+      id: chat.id,
+      chat_id: chat.chat_id,
+      created_at: chat.created_at,
+      topic_summary: chat.metadata?.topicSummary || chat.metadata?.topic_summary || null,
+      leadScore: chat.metadata?.leadScore || null,
+      sentiment: chat.metadata?.sentiment || null,
       message_count: chat.messages?.[0]?.count || 0,
-      messages: undefined, // Remove the nested messages object
     })) || [];
 
     return NextResponse.json({ chats: chatsWithCount });

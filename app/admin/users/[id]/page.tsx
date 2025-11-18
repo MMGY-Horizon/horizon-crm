@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MessageSquare, Eye, Mail, Calendar, RefreshCw } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Eye, Mail, Calendar, RefreshCw, ChevronDown, ChevronRight, User, Bot } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 
 interface Visitor {
@@ -16,11 +16,19 @@ interface Visitor {
 
 interface Chat {
   id: string;
+  chat_id: string;
   created_at: string;
   message_count: number;
   topic_summary: string | null;
   leadScore: number | null;
   sentiment: string | null;
+}
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  created_at: string;
 }
 
 interface ArticleView {
@@ -38,8 +46,51 @@ export default function UserDetailPage() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [views, setViews] = useState<ArticleView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedChats, setExpandedChats] = useState<Set<string>>(new Set());
+  const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>({});
+  const [loadingMessages, setLoadingMessages] = useState<Set<string>>(new Set());
 
   const visitorId = params.id as string;
+
+  const fetchMessages = async (chatId: string) => {
+    if (chatMessages[chatId]) return;
+
+    setLoadingMessages(prev => new Set(prev).add(chatId));
+
+    try {
+      const response = await fetch(`/api/chats/${chatId}/messages`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch messages');
+      }
+
+      const data = await response.json();
+
+      setChatMessages(prev => ({
+        ...prev,
+        [chatId]: data || []
+      }));
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setLoadingMessages(prev => {
+        const next = new Set(prev);
+        next.delete(chatId);
+        return next;
+      });
+    }
+  };
+
+  const toggleChat = (chatId: string) => {
+    const newExpanded = new Set(expandedChats);
+    if (newExpanded.has(chatId)) {
+      newExpanded.delete(chatId);
+    } else {
+      newExpanded.add(chatId);
+      fetchMessages(chatId);
+    }
+    setExpandedChats(newExpanded);
+  };
 
   const fetchUserData = async () => {
     setLoading(true);
@@ -221,28 +272,86 @@ export default function UserDetailPage() {
                 </div>
               ) : (
                 chats.map((chat) => (
-                  <div key={chat.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900 mb-1">
-                          {chat.topic_summary || 'No summary available'}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(chat.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                      {chat.leadScore && (
-                        <div className="ml-2">
-                          {getLeadScoreBadge(chat.leadScore)}
+                  <div key={chat.id}>
+                    <div
+                      className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => toggleChat(chat.chat_id)}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-start gap-2 flex-1">
+                          <button className="text-gray-400 hover:text-gray-600 mt-0.5">
+                            {expandedChats.has(chat.chat_id) ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </button>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900 mb-1">
+                              {chat.topic_summary || 'No summary available'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(chat.created_at).toLocaleString()}
+                            </p>
+                          </div>
                         </div>
-                      )}
+                        {chat.leadScore && (
+                          <div className="ml-2">
+                            {getLeadScoreBadge(chat.leadScore)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-gray-600 ml-6">
+                        <span>{chat.message_count} messages</span>
+                        {chat.sentiment && (
+                          <span className="capitalize">{chat.sentiment} sentiment</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-gray-600">
-                      <span>{chat.message_count} messages</span>
-                      {chat.sentiment && (
-                        <span className="capitalize">{chat.sentiment} sentiment</span>
-                      )}
-                    </div>
+
+                    {/* Expanded Chat Transcript */}
+                    {expandedChats.has(chat.chat_id) && (
+                      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                        <h4 className="text-xs font-semibold text-gray-700 mb-3">Chat Transcript</h4>
+
+                        {loadingMessages.has(chat.chat_id) ? (
+                          <div className="flex items-center justify-center py-8">
+                            <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                          </div>
+                        ) : chatMessages[chat.chat_id]?.length > 0 ? (
+                          <div className="space-y-3">
+                            {chatMessages[chat.chat_id].map((message, idx) => (
+                              <div key={message.id || idx} className="flex gap-2">
+                                <div className={`flex-shrink-0 h-7 w-7 rounded-full flex items-center justify-center ${
+                                  message.role === 'user' ? 'bg-blue-100 text-blue-600' : 'bg-gray-800 text-white'
+                                }`}>
+                                  {message.role === 'user' ? (
+                                    <User className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <Bot className="h-3.5 w-3.5" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="text-xs font-medium text-gray-900">
+                                      {message.role === 'user' ? 'User' : 'Assistant'}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      {new Date(message.created_at).toLocaleTimeString()}
+                                    </span>
+                                  </div>
+                                  <div className="rounded-lg px-3 py-2 text-xs bg-white border border-gray-200">
+                                    <p className="text-gray-900 whitespace-pre-wrap">{message.content}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-500 text-center py-6">No messages found for this chat.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))
               )}
