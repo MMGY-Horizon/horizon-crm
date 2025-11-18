@@ -246,8 +246,8 @@ export default function UserDetailPage() {
               </span>
             </div>
 
-            {/* Check if any Apollo data exists */}
-            {!user.apollo_id && !user.title && !user.company_name && !user.city ? (
+            {/* Check if any useful Apollo data exists */}
+            {!user.title && !user.headline && !user.linkedin_url && !user.company_name && !user.city ? (
               <div className="text-center py-8">
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-3">
                   <User className="h-6 w-6 text-gray-400" />
