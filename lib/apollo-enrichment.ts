@@ -136,7 +136,7 @@ export async function enrichVisitor(visitorId: string, email: string): Promise<b
     const person = result.data.person;
 
     // Build the full name, but only if we have valid first/last names
-    let fullName = person.name;
+    let fullName: string | null = person.name;
     if (!fullName && (person.first_name || person.last_name)) {
       const parts = [person.first_name, person.last_name].filter(Boolean);
       fullName = parts.length > 0 ? parts.join(' ') : null;
