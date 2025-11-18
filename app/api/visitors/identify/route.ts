@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { authorizeRequest } from '@/lib/api-auth';
+import { enrichVisitor } from '@/lib/apollo-enrichment';
 
 // Handle CORS preflight
 export async function OPTIONS(request: NextRequest) {
@@ -232,6 +233,12 @@ export async function POST(request: NextRequest) {
       }
 
       visitorId = newVisitor.id;
+
+      // Trigger Apollo enrichment for new visitor (async, don't wait)
+      // This will only enrich if apollo_enriched_at is NULL
+      enrichVisitor(visitorId, email).catch((error) => {
+        console.error('Apollo enrichment error (non-blocking):', error);
+      });
     }
 
     // Always link session and chat data to visitor when identified
