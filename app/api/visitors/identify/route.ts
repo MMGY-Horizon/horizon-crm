@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { authorizeRequest } from '@/lib/api-auth';
 
 // Handle CORS preflight
 export async function OPTIONS(request: NextRequest) {
@@ -8,13 +9,24 @@ export async function OPTIONS(request: NextRequest) {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
     },
   });
 }
 
 // POST /api/visitors/identify - Identify/create visitor from newsletter signup
 export async function POST(request: NextRequest) {
+  // Authorize request and get organization ID
+  const auth = await authorizeRequest(request);
+  if (!auth.authorized || !auth.organizationId) {
+    const errorResponse = NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+    errorResponse.headers.set('Access-Control-Allow-Origin', '*');
+    return errorResponse;
+  }
+
   try {
     const { email, session_id, chat_id, source, visitor_id } = await request.json();
 
@@ -204,6 +216,7 @@ export async function POST(request: NextRequest) {
           email,
           source: source || 'newsletter',
           last_active_at: new Date().toISOString(),
+          organization_id: auth.organizationId,
         })
         .select()
         .single();

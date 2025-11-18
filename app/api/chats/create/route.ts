@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { authorizeRequest } from "@/lib/api-auth";
 
 interface CreateChatPayload {
   sessionId: string;
@@ -12,16 +13,9 @@ interface CreateChatPayload {
   metadata?: Record<string, unknown>;
 }
 
-function authorizeRequest(request: Request) {
-  const apiKey = request.headers.get("x-api-key");
-  if (!apiKey || apiKey !== process.env.CRM_API_KEY) {
-    return false;
-  }
-  return true;
-}
-
 export async function POST(request: Request) {
-  if (!authorizeRequest(request)) {
+  const auth = await authorizeRequest(request);
+  if (!auth.authorized || !auth.organizationId) {
     console.warn("[CRM] Unauthorized chat creation attempt");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -59,6 +53,7 @@ export async function POST(request: Request) {
       user_agent: body.userAgent ?? null,
       status: body.status ?? "active",
       metadata: body.metadata ?? {},
+      organization_id: auth.organizationId,
     })
     .select()
     .single();
