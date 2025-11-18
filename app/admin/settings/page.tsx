@@ -10,6 +10,7 @@ interface OrganizationSettings {
   location: string;
   website_url: string;
   status: string;
+  api_key: string;
 }
 
 export default function SettingsPage() {
@@ -17,6 +18,9 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Form state
   const [organizationName, setOrganizationName] = useState('');
@@ -84,6 +88,50 @@ export default function SettingsPage() {
       setOrganizationName(settings.organization_name);
       setLocation(settings.location || '');
       setWebsiteUrl(settings.website_url || '');
+    }
+  };
+
+  const handleRegenerateApiKey = async () => {
+    if (!confirm('Are you sure you want to regenerate the API key? This will invalidate the current key.')) {
+      return;
+    }
+
+    setRegenerating(true);
+    setSaveMessage(null);
+
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'regenerate_api_key',
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSettings(data);
+        setSaveMessage('✓ API key regenerated successfully');
+        setShowApiKey(true);
+      } else {
+        setSaveMessage('✗ Failed to regenerate API key');
+      }
+    } catch (error) {
+      console.error('Error regenerating API key:', error);
+      setSaveMessage('✗ Error regenerating API key');
+    } finally {
+      setRegenerating(false);
+      setTimeout(() => setSaveMessage(null), 3000);
+    }
+  };
+
+  const handleCopyApiKey = () => {
+    if (settings?.api_key) {
+      navigator.clipboard.writeText(settings.api_key);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -179,6 +227,56 @@ export default function SettingsPage() {
                 disabled
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 capitalize"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* API Key Section */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">API Key</h2>
+
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Use this API key to authenticate requests from the Concierge app to the CRM.
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                API Key
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={settings?.api_key || ''}
+                  disabled
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 font-mono text-sm"
+                />
+                <button
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+                >
+                  {showApiKey ? 'Hide' : 'Show'}
+                </button>
+                <button
+                  onClick={handleCopyApiKey}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-gray-200">
+              <button
+                onClick={handleRegenerateApiKey}
+                disabled={regenerating}
+                className="px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {regenerating ? 'Regenerating...' : 'Regenerate API Key'}
+              </button>
+              <p className="text-xs text-gray-500 mt-2">
+                Warning: Regenerating will invalidate the current API key and break existing integrations.
+              </p>
             </div>
           </div>
         </div>
