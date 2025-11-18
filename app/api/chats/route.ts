@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getUserOrganization } from '@/lib/get-user-organization';
 
 export async function GET(request: NextRequest) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
     // Use a single query with aggregation to get chats and message counts
     // This is much faster than N+1 queries
@@ -15,6 +26,7 @@ export async function GET(request: NextRequest) {
       const { data: fallbackChats, error: fallbackError } = await supabaseAdmin
         .from('chats')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (fallbackError) {
@@ -47,7 +59,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(chatsWithCounts);
     }
 
-    return NextResponse.json(chats);
+    // Filter RPC results by organization
+    const filteredChats = chats?.filter((chat: any) => chat.organization_id === organizationId) || [];
+    return NextResponse.json(filteredChats);
   } catch (error) {
     console.error('Error in chats API:', error);
     return NextResponse.json(

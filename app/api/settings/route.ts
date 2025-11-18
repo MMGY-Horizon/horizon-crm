@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { invalidateApiKeyCache } from '@/lib/api-auth';
+import { getUserOrganization } from '@/lib/get-user-organization';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,12 +9,22 @@ const supabaseAdmin = createClient(
 );
 
 export async function GET(request: NextRequest) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
-    // Get organization settings (we'll always use visit-fort-myers slug for now)
+    // Get organization settings for user's organization
     const { data: settings, error } = await supabaseAdmin
       .from('organization_settings')
       .select('*')
-      .eq('slug', 'visit-fort-myers')
+      .eq('id', organizationId)
       .single();
 
     if (error) {
@@ -35,6 +46,16 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { action } = body;
@@ -58,7 +79,7 @@ export async function POST(request: NextRequest) {
       const { data: settings, error: updateError } = await supabaseAdmin
         .from('organization_settings')
         .update({ api_key: newApiKey })
-        .eq('slug', 'visit-fort-myers')
+        .eq('id', organizationId)
         .select()
         .single();
 
@@ -90,6 +111,16 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { organization_name, location, website_url } = body;
@@ -102,7 +133,7 @@ export async function PUT(request: NextRequest) {
         location,
         website_url,
       })
-      .eq('slug', 'visit-fort-myers')
+      .eq('id', organizationId)
       .select()
       .single();
 
