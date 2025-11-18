@@ -1,44 +1,82 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// Generate sample data
-const generateData = (points: number, max: number) => {
-  const data = [];
-  const startDate = new Date('2025-10-14');
-  
-  for (let i = 0; i < points; i++) {
-    const date = new Date(startDate);
-    date.setDate(date.getDate() + i);
-    data.push({
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      value: Math.floor(Math.random() * max) + Math.floor(max * 0.2)
-    });
-  }
-  
-  return data;
-};
+interface ChartDataPoint {
+  date: string;
+  value: number;
+}
 
-const onboardData = generateData(90, 100);
-const chatMessageData = generateData(90, 120);
-const itineraryData = generateData(90, 80);
-const partnerSiteData = generateData(90, 60);
-const registrationData = generateData(90, 40);
+interface ActivityData {
+  uniqueUsers: ChartDataPoint[];
+  chatMessages: ChartDataPoint[];
+  registrations: ChartDataPoint[];
+}
 
 export default function UserActivityCharts() {
+  const [data, setData] = useState<ActivityData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchActivityData() {
+      try {
+        const response = await fetch('/api/analytics/user-activity');
+        if (response.ok) {
+          const activityData = await response.json();
+          setData(activityData);
+        } else {
+          console.error('Failed to fetch activity data');
+        }
+      } catch (error) {
+        console.error('Error fetching activity data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchActivityData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold text-gray-900">Unique Users</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 h-64 flex items-center justify-center">
+            <p className="text-gray-500">Loading...</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-6 h-64 flex items-center justify-center">
+            <p className="text-gray-500">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold text-gray-900">Unique Users</h2>
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <p className="text-gray-500">No data available</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-900">Unique Users</h2>
-      
+      <h2 className="text-xl font-semibold text-gray-900">User Activity</h2>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Users Who Went Onboard */}
+        {/* Unique Users */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Users Who Went Onboard</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Unique Users</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={onboardData}>
+            <LineChart data={data.uniqueUsers}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="date" 
+              <XAxis
+                dataKey="date"
                 tick={{ fontSize: 12 }}
                 interval={20}
               />
@@ -53,46 +91,10 @@ export default function UserActivityCharts() {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-sm font-semibold text-gray-700 mb-4">Users Who Sent Chat Message</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chatMessageData}>
+            <LineChart data={data.chatMessages}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }}
-                interval={20}
-              />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Users Who Made an Itinerary */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Users Who Made an Itinerary</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={itineraryData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }}
-                interval={20}
-              />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Users Who Opened OTA Partner Site */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Users Who Opened OTA Partner Site</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={partnerSiteData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="date" 
+              <XAxis
+                dataKey="date"
                 tick={{ fontSize: 12 }}
                 interval={20}
               />
@@ -108,10 +110,10 @@ export default function UserActivityCharts() {
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-sm font-semibold text-gray-700 mb-4">User Registrations</h3>
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={registrationData}>
+          <LineChart data={data.registrations}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis 
-              dataKey="date" 
+            <XAxis
+              dataKey="date"
               tick={{ fontSize: 12 }}
               interval={10}
             />
