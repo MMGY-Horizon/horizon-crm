@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     // Use a single query with aggregation to get chats and message counts
     // This is much faster than N+1 queries
     const { data: chats, error: chatsError } = await supabaseAdmin
-      .rpc('get_chats_with_message_counts');
+      .rpc('get_chats_with_message_counts', { org_id: organizationId });
 
     if (chatsError) {
       console.error('Error fetching chats:', chatsError);
@@ -59,9 +59,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(chatsWithCounts);
     }
 
-    // Filter RPC results by organization
-    const filteredChats = chats?.filter((chat: any) => chat.organization_id === organizationId) || [];
-    return NextResponse.json(filteredChats);
+    // RPC already filters by organization
+    return NextResponse.json(chats || []);
   } catch (error) {
     console.error('Error in chats API:', error);
     return NextResponse.json(
