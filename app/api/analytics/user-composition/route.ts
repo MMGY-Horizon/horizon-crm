@@ -31,16 +31,52 @@ function getDeviceType(userAgent: string | null): 'Mobile' | 'Desktop' | 'Unknow
   return 'Desktop';
 }
 
+// Helper function to normalize country names
+function normalizeCountry(country: string): string {
+  const normalized = country.toLowerCase().trim();
+
+  // Map common variations to standard names
+  const countryMap: Record<string, string> = {
+    'us': 'United States',
+    'usa': 'United States',
+    'united states': 'United States',
+    'united states of america': 'United States',
+    'uk': 'United Kingdom',
+    'great britain': 'United Kingdom',
+    'united kingdom': 'United Kingdom',
+  };
+
+  return countryMap[normalized] || country;
+}
+
+// Helper function to check if location is valid
+function isValidLocation(location: string): boolean {
+  if (!location) return false;
+
+  // Filter out IP addresses
+  if (location.toLowerCase().includes('ip:')) return false;
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(location.trim())) return false;
+
+  // Filter out other invalid patterns
+  if (location.toLowerCase() === 'unknown') return false;
+  if (location.toLowerCase() === 'n/a') return false;
+
+  return true;
+}
+
 // Helper function to parse location and extract city/country
 function parseLocation(location: string | null): { city: string | null; country: string | null } {
-  if (!location) return { city: null, country: null };
+  if (!location || !isValidLocation(location)) {
+    return { city: null, country: null };
+  }
 
   // Location format is typically "City, State, Country" or similar
   const parts = location.split(',').map(p => p.trim());
 
   if (parts.length >= 1) {
     const city = parts[0];
-    const country = parts[parts.length - 1];
+    const rawCountry = parts[parts.length - 1];
+    const country = normalizeCountry(rawCountry);
     return { city, country };
   }
 
