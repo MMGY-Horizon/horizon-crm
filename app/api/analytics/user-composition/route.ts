@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getUserOrganization } from '@/lib/get-user-organization';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -84,11 +85,22 @@ function parseLocation(location: string | null): { city: string | null; country:
 }
 
 export async function GET(request: NextRequest) {
+  // Get user's organization
+  const organizationId = await getUserOrganization();
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
   try {
-    // Get all chats with location and user_agent data
+    // Get all chats with location and user_agent data for this organization
     const { data: chats, error } = await supabaseAdmin
       .from('chats')
-      .select('location, user_agent, created_at');
+      .select('location, user_agent, created_at')
+      .eq('organization_id', organizationId);
 
     if (error) {
       console.error('Error fetching chats:', error);

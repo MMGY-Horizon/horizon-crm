@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getUserOrganization } from '@/lib/get-user-organization';
 import { supabaseAdmin } from '@/lib/supabase';
 
 // GET /api/visitors/[id] - Get visitor details
@@ -8,22 +7,24 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  // Get user's organization
+  const organizationId = await getUserOrganization();
 
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
+  try {
     const { id: visitorId } = await params;
 
     const { data: visitor, error } = await supabaseAdmin
       .from('visitors')
       .select('*')
       .eq('id', visitorId)
+      .eq('organization_id', organizationId)
       .single();
 
     if (error) {

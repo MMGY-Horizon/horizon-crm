@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getUserOrganization } from '@/lib/get-user-organization';
 import { supabaseAdmin } from '@/lib/supabase';
 
 // GET /api/users - Fetch all users
 export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  // Get user's organization
+  const organizationId = await getUserOrganization();
 
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Unauthorized - no organization found' },
+      { status: 401 }
+    );
+  }
+
+  try {
     const { data: users, error } = await supabaseAdmin
       .from('users')
       .select('*')
+      .eq('organization_id', organizationId)
       .order('created_at', { ascending: false });
 
     if (error) {
