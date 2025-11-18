@@ -279,7 +279,7 @@ export default function UserDetailPage() {
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-start gap-2 flex-1">
-                          <button className="text-gray-400 hover:text-gray-600 mt-0.5">
+                          <button className="text-gray-400 hover:text-gray-600 mt-0.5 cursor-pointer">
                             {expandedChats.has(chat.chat_id) ? (
                               <ChevronDown className="h-4 w-4" />
                             ) : (

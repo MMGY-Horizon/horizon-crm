@@ -278,17 +278,17 @@ export default function ChatsPage() {
 
       {/* Main Content */}
       <div className="p-8">
-        {/* Controls Row */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="relative" ref={dateDropdownRef}>
-            <button 
+        {/* Date Filter */}
+        <div className="mb-6">
+          <div className="relative inline-block" ref={dateDropdownRef}>
+            <button
               onClick={() => setShowDateDropdown(!showDateDropdown)}
               className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
             >
               {dateRange}
               <ChevronDown className="h-4 w-4" />
             </button>
-            
+
             {showDateDropdown && (
               <div className="absolute z-10 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg">
                 {dateRangeOptions.map((option) => (
@@ -299,7 +299,7 @@ export default function ChatsPage() {
                       setShowDateDropdown(false);
                       setCurrentPage(1); // Reset to first page
                     }}
-                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
+                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg cursor-pointer ${
                       dateRange === option ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                     }`}
                   >
@@ -309,21 +309,19 @@ export default function ChatsPage() {
               </div>
             )}
           </div>
+        </div>
 
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by chat ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="rounded-lg border border-gray-300 bg-white pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <button className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-              Search
-            </button>
+        {/* Search */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by chat ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
         </div>
 
@@ -413,7 +411,7 @@ export default function ChatsPage() {
                     onClick={() => toggleRow(chat.chat_id)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button className="text-gray-400 hover:text-gray-600">
+                      <button className="text-gray-400 hover:text-gray-600 cursor-pointer">
                         {expandedRows.has(chat.chat_id) ? (
                           <ChevronDown className="h-4 w-4" />
                         ) : (
@@ -531,7 +529,7 @@ export default function ChatsPage() {
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             ‹
           </button>
@@ -541,7 +539,7 @@ export default function ChatsPage() {
           <button
             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             ›
           </button>

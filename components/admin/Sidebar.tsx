@@ -10,7 +10,6 @@ import {
   MapPin,
   Settings,
   UsersRound,
-  Globe,
   Search,
   Sparkles,
   LogOut
@@ -23,7 +22,6 @@ const navigation = [
   { name: 'Visitors', href: '/admin/users', icon: Users },
   { name: 'Team', href: '/admin/team', icon: UsersRound },
   { name: 'Crawler', href: '/admin/crawler', icon: Search },
-  { name: 'Web Integration', href: '/admin/web-integration', icon: Globe },
 ];
 
 const bottomNavigation = [

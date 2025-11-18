@@ -147,9 +147,9 @@ export default function PlacesPage() {
           <div className="flex items-center gap-4">
             {/* Date Range Dropdown */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setShowDateDropdown(!showDateDropdown)}
-                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
               >
                 {dateRangeLabel}
                 <ChevronDown className="h-4 w-4" />
@@ -165,7 +165,7 @@ export default function PlacesPage() {
                         setShowDateDropdown(false);
                         setCurrentPage(1);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg cursor-pointer"
                     >
                       {option.label}
                     </button>
@@ -176,9 +176,9 @@ export default function PlacesPage() {
 
             {/* Type Filter Dropdown */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
               >
                 {typeFilter}
                 <ChevronDown className="h-4 w-4" />
@@ -193,7 +193,7 @@ export default function PlacesPage() {
                         setShowTypeDropdown(false);
                         setCurrentPage(1);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg cursor-pointer"
                     >
                       {option}
                     </button>
@@ -317,7 +317,7 @@ export default function PlacesPage() {
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               ‹
             </button>
@@ -327,7 +327,7 @@ export default function PlacesPage() {
             <button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               ›
             </button>
