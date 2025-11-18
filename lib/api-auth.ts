@@ -1,61 +1,71 @@
 import { supabaseAdmin } from './supabase';
 
-// Cache the API key for 5 minutes to reduce database calls
-let cachedApiKey: string | null = null;
+// Cache the organization data for 5 minutes to reduce database calls
+interface OrganizationCache {
+  id: string;
+  apiKey: string;
+  slug: string;
+}
+
+let cachedOrgsByApiKey = new Map<string, OrganizationCache>();
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-async function getValidApiKey(): Promise<string | null> {
+async function getOrganizationByApiKey(apiKey: string): Promise<OrganizationCache | null> {
   const now = Date.now();
 
-  // Return cached key if still valid
-  if (cachedApiKey && (now - cacheTimestamp) < CACHE_DURATION) {
-    return cachedApiKey;
+  // Return cached org if still valid
+  if (cachedOrgsByApiKey.has(apiKey) && (now - cacheTimestamp) < CACHE_DURATION) {
+    return cachedOrgsByApiKey.get(apiKey)!;
   }
 
-  // Fetch API key from database
+  // Fetch organization by API key from database
   try {
     const { data, error } = await supabaseAdmin
       .from('organization_settings')
-      .select('api_key')
-      .eq('slug', 'visit-fort-myers')
+      .select('id, api_key, slug')
+      .eq('api_key', apiKey)
       .single();
 
     if (error || !data) {
-      console.error('Error fetching API key from database:', error);
       return null;
     }
 
     // Update cache
-    cachedApiKey = data.api_key;
+    const orgCache: OrganizationCache = {
+      id: data.id,
+      apiKey: data.api_key,
+      slug: data.slug,
+    };
+    cachedOrgsByApiKey.set(apiKey, orgCache);
     cacheTimestamp = now;
 
-    return cachedApiKey;
+    return orgCache;
   } catch (error) {
-    console.error('Error in getValidApiKey:', error);
+    console.error('Error in getOrganizationByApiKey:', error);
     return null;
   }
 }
 
-export async function authorizeRequest(request: Request): Promise<boolean> {
+export async function authorizeRequest(request: Request): Promise<{ authorized: boolean; organizationId?: string }> {
   const apiKey = request.headers.get('x-api-key');
 
   if (!apiKey) {
-    return false;
+    return { authorized: false };
   }
 
-  const validApiKey = await getValidApiKey();
+  const org = await getOrganizationByApiKey(apiKey);
 
-  if (!validApiKey) {
-    console.error('No valid API key found in database');
-    return false;
+  if (!org) {
+    console.error('No valid organization found for API key');
+    return { authorized: false };
   }
 
-  return apiKey === validApiKey;
+  return { authorized: true, organizationId: org.id };
 }
 
 // Function to invalidate the cache (call this after regenerating the API key)
 export function invalidateApiKeyCache() {
-  cachedApiKey = null;
+  cachedOrgsByApiKey.clear();
   cacheTimestamp = 0;
 }
