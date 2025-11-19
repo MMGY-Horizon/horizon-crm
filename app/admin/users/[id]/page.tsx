@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, MessageSquare, Eye, Mail, Calendar, RefreshCw, ChevronDown, ChevronRight, User, Bot, Briefcase, MapPin, Linkedin, Building2, Globe } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
+import TripsSection from '@/components/admin/TripsSection';
 
 interface Visitor {
   id: string;
@@ -542,6 +543,11 @@ export default function UserDetailPage() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Trips Section */}
+        <div className="mt-6">
+          <TripsSection visitorId={visitorId} />
         </div>
       </div>
     </div>
