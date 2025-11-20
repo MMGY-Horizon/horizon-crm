@@ -267,8 +267,8 @@ export async function POST(request: NextRequest) {
       const locationInserts = trip.locations.map((loc) => ({
         trip_id: tripData.id,
         name: loc.name,
-        lat: loc.lat,
-        lng: loc.lng,
+        latitude: loc.lat,
+        longitude: loc.lng,
         description: loc.description || null,
         added_at: new Date(loc.addedAt).toISOString(),
       }));
