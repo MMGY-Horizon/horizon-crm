@@ -6,8 +6,8 @@ import { MapPin, Calendar, ChevronDown, ChevronRight, Plane } from 'lucide-react
 interface TripLocation {
   id: string;
   name: string;
-  lat: number;
-  lng: number;
+  latitude: number;
+  longitude: number;
   description: string | null;
   added_at: string;
 }
