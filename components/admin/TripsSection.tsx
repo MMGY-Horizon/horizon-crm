@@ -19,7 +19,7 @@ interface Trip {
   start_date: string | null;
   end_date: string | null;
   days: number | null;
-  image: string | null;
+  image_url: string | null;
   location_count: number;
   created_at: string;
   updated_at: string;
@@ -163,9 +163,9 @@ export default function TripsSection({ visitorId }: TripsSectionProps) {
                   <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
                 )}
 
-                {trip.image ? (
+                {trip.image_url ? (
                   <img
-                    src={trip.image}
+                    src={trip.image_url}
                     alt={trip.name}
                     className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                   />
