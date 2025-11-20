@@ -253,8 +253,15 @@ export async function POST(request: NextRequest) {
 
       if (createError) {
         console.error("Error creating trip:", createError);
+        console.error("Trip data attempted:", JSON.stringify({
+          id: trip.id,
+          name: trip.name,
+          destination: trip.destination,
+          visitor_id: visitor.id,
+          organization_id: organizationId,
+        }));
         return NextResponse.json(
-          { error: "Failed to create trip" },
+          { error: "Failed to create trip", details: createError.message, code: createError.code },
           { status: 500 }
         );
       }
@@ -279,8 +286,9 @@ export async function POST(request: NextRequest) {
 
       if (locationsError) {
         console.error("Error inserting trip locations:", locationsError);
+        console.error("Locations data attempted:", JSON.stringify(locationInserts));
         return NextResponse.json(
-          { error: "Failed to save trip locations" },
+          { error: "Failed to save trip locations", details: locationsError.message, code: locationsError.code },
           { status: 500 }
         );
       }
