@@ -155,7 +155,7 @@ export default function TripsSection({ visitorId }: TripsSectionProps) {
               {/* Trip Header */}
               <button
                 onClick={() => toggleTrip(trip.id)}
-                className="w-full flex items-start gap-3 p-4 hover:bg-gray-50 transition-colors text-left"
+                className="w-full flex items-start gap-3 p-4 hover:bg-gray-50 transition-colors text-left cursor-pointer"
               >
                 {isExpanded ? (
                   <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />

@@ -12,13 +12,15 @@ import {
   UsersRound,
   Search,
   Sparkles,
-  LogOut
+  LogOut,
+  Plane
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Chats', href: '/admin/chats', icon: MessageSquare },
   { name: 'Places', href: '/admin/places', icon: MapPin },
+  { name: 'Trips', href: '/admin/trips', icon: Plane },
   { name: 'Visitors', href: '/admin/users', icon: Users },
   { name: 'Team', href: '/admin/team', icon: UsersRound },
   { name: 'Crawler', href: '/admin/crawler', icon: Search },

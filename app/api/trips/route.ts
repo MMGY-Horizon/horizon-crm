@@ -17,12 +17,13 @@ export async function GET(request: NextRequest) {
 
     console.log("[Trips API] Fetching trips for:", { organizationId, visitorId, userId });
 
-    // Select trips with location count
+    // Select trips with location count and visitor info
     let query = supabaseAdmin
       .from("trips")
       .select(`
         *,
-        location_count:trip_locations(count)
+        location_count:trip_locations(count),
+        visitor:visitors(id, email, first_name, last_name)
       `)
       .eq("organization_id", organizationId)
       .order("updated_at", { ascending: false });
