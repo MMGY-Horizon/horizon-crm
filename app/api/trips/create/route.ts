@@ -53,24 +53,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get visitor from chats table using session_id
-    console.log("[Create Trip API] Looking up chat with session_id:", visitorId);
+    // Try to find visitor using multiple methods
+    console.log("[Create Trip API] Looking up visitor for session_id:", visitorId);
+
+    let visitor = null;
+    let organizationId = authOrgId;
+    let foundMethod = null;
+
+    // Method 1: Check chats table
     const { data: chat, error: chatError } = await supabaseAdmin
       .from("chats")
       .select("visitor_id, organization_id")
       .eq("session_id", visitorId)
+      .not("visitor_id", "is", null)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    console.log("[Create Trip API] Chat lookup result:", { chat, error: chatError });
+    if (!chatError && chat?.visitor_id) {
+      const { data: existingVisitor } = await supabaseAdmin
+        .from("visitors")
+        .select("id")
+        .eq("id", chat.visitor_id)
+        .single();
 
-    let visitor;
-    let organizationId = authOrgId;
+      if (existingVisitor) {
+        visitor = existingVisitor;
+        organizationId = chat.organization_id;
+        foundMethod = "chat";
+        console.log("[Create Trip API] Found visitor via chat:", visitor.id);
+      }
+    }
 
-    if (chatError || !chat || !chat.visitor_id) {
-      // No chat found - create a new visitor for this session with placeholder email
-      console.log("[Create Trip API] No chat found, creating new visitor for session:", visitorId);
+    // Method 2: Check article_views table
+    if (!visitor) {
+      const { data: view, error: viewError } = await supabaseAdmin
+        .from("article_views")
+        .select("visitor_id")
+        .eq("session_id", visitorId)
+        .not("visitor_id", "is", null)
+        .limit(1)
+        .maybeSingle();
+
+      if (!viewError && view?.visitor_id) {
+        const { data: existingVisitor } = await supabaseAdmin
+          .from("visitors")
+          .select("id")
+          .eq("id", view.visitor_id)
+          .single();
+
+        if (existingVisitor) {
+          visitor = existingVisitor;
+          foundMethod = "article_view";
+          console.log("[Create Trip API] Found visitor via article_view:", visitor.id);
+        }
+      }
+    }
+
+    if (!visitor) {
+      // No visitor found - create a new visitor for this session with placeholder email
+      console.log("[Create Trip API] No visitor found, creating new visitor for session:", visitorId);
 
       // Use a placeholder email based on session ID (anonymous visitors)
       const placeholderEmail = `anonymous-${visitorId.substring(0, 8)}@concierge.local`;
@@ -96,24 +138,53 @@ export async function POST(request: NextRequest) {
 
       visitor = newVisitor;
       organizationId = authOrgId;
+      foundMethod = "created";
       console.log("[Create Trip API] Created new visitor:", visitor.id, "with email:", placeholderEmail);
-    } else {
-      // Get visitor details from existing chat
-      const { data: existingVisitor, error: visitorError } = await supabaseAdmin
-        .from("visitors")
+    }
+
+    // Ensure there's a chat record linking this session to the visitor
+    // This is important so future operations can find the visitor by session_id
+    if (foundMethod !== "chat") {
+      console.log("[Create Trip API] Creating chat record to link session to visitor");
+
+      // Check if chat already exists for this session
+      const { data: existingChat } = await supabaseAdmin
+        .from("chats")
         .select("id")
-        .eq("id", chat.visitor_id)
-        .single();
+        .eq("session_id", visitorId)
+        .maybeSingle();
 
-      if (visitorError || !existingVisitor) {
-        return NextResponse.json(
-          { error: "Visitor details not found" },
-          { status: 404 }
-        );
+      if (!existingChat) {
+        // Create new chat
+        const { error: chatCreateError } = await supabaseAdmin
+          .from("chats")
+          .insert({
+            session_id: visitorId,
+            visitor_id: visitor.id,
+            organization_id: organizationId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (chatCreateError) {
+          console.error("[Create Trip API] Warning: Failed to create chat record:", chatCreateError);
+          // Don't fail the request, just log the warning
+        } else {
+          console.log("[Create Trip API] Chat record created for session:", visitorId);
+        }
+      } else {
+        // Update existing chat with visitor_id
+        const { error: chatUpdateError } = await supabaseAdmin
+          .from("chats")
+          .update({ visitor_id: visitor.id })
+          .eq("id", existingChat.id);
+
+        if (chatUpdateError) {
+          console.error("[Create Trip API] Warning: Failed to update chat record:", chatUpdateError);
+        } else {
+          console.log("[Create Trip API] Chat record updated for session:", visitorId);
+        }
       }
-
-      visitor = existingVisitor;
-      organizationId = chat.organization_id;
     }
 
     // Check if trip already exists (by trip.id which is the client-side UUID)
