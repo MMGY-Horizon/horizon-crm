@@ -225,7 +225,7 @@ export default function TripsSection({ visitorId }: TripsSectionProps) {
                               </p>
                             )}
                             <p className="text-xs text-gray-500 mt-1">
-                              {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                              {location.latitude?.toFixed(4) || 'N/A'}, {location.longitude?.toFixed(4) || 'N/A'}
                             </p>
                           </div>
                         </div>

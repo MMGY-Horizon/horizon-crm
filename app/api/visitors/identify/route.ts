@@ -31,6 +31,14 @@ export async function POST(request: NextRequest) {
   try {
     const { email, session_id, chat_id, source, visitor_id } = await request.json();
 
+    console.log('[Identify API] Request received:', {
+      email,
+      session_id,
+      chat_id,
+      visitor_id,
+      source
+    });
+
     if (!email) {
       const errorResponse = NextResponse.json(
         { error: 'Email is required' },
@@ -244,24 +252,48 @@ export async function POST(request: NextRequest) {
     // Always link session and chat data to visitor when identified
     let linkedChatsCount = 0;
     let linkedViewsCount = 0;
+    let linkedTripsCount = 0;
+
+    // First, find any existing visitor_ids for this session before we update
+    let oldVisitorIds: string[] = [];
+    if (session_id) {
+      const { data: existingChats } = await supabaseAdmin
+        .from('chats')
+        .select('visitor_id')
+        .eq('session_id', session_id)
+        .not('visitor_id', 'is', null);
+
+      if (existingChats && existingChats.length > 0) {
+        oldVisitorIds = [...new Set(existingChats.map(c => c.visitor_id).filter(Boolean))];
+        console.log(`[Identify API] Found ${oldVisitorIds.length} existing visitor(s) for session: ${oldVisitorIds.join(', ')}`);
+      }
+    }
 
     // Update chats table for this session_id (links all chats from this session)
     if (session_id) {
+      console.log(`[Identify API] Attempting to link chats with session_id: ${session_id} to visitor: ${visitorId}`);
+
+      // Update ALL chats with this session_id, even if they already have a visitor_id
+      // This handles the case where an anonymous visitor was created before identification
       const { data: linkedChats, error: chatSessionUpdateError } = await supabaseAdmin
         .from('chats')
         .update({ visitor_id: visitorId })
         .eq('session_id', session_id)
-        .is('visitor_id', null) // Only update if not already linked
         .select('id');
 
       if (chatSessionUpdateError) {
-        console.error('Error linking session chats to visitor:', chatSessionUpdateError);
+        console.error('[Identify API] Error linking session chats to visitor:', chatSessionUpdateError);
       } else {
         linkedChatsCount = linkedChats?.length || 0;
+        console.log(`[Identify API] Chat linking result: ${linkedChatsCount} chat(s) linked`, linkedChats);
         if (linkedChatsCount > 0) {
-          console.log(`Linked ${linkedChatsCount} chat(s) to visitor ${visitorId}`);
+          console.log(`[Identify API] Successfully linked ${linkedChatsCount} chat(s) to visitor ${visitorId}`);
+        } else {
+          console.log(`[Identify API] No chats found to link for session_id: ${session_id}`);
         }
       }
+    } else {
+      console.log('[Identify API] No session_id provided, skipping chat linking');
     }
 
     // Update specific chat if chat_id provided
@@ -297,6 +329,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Migrate trips from old anonymous visitors to the identified visitor
+    if (oldVisitorIds.length > 0 && !oldVisitorIds.includes(visitorId)) {
+      console.log(`[Identify API] Migrating trips from anonymous visitor(s) to ${visitorId}`);
+
+      const { data: migratedTrips, error: tripMigrateError } = await supabaseAdmin
+        .from('trips')
+        .update({ visitor_id: visitorId })
+        .in('visitor_id', oldVisitorIds)
+        .eq('organization_id', auth.organizationId)
+        .select('id');
+
+      if (tripMigrateError) {
+        console.error('[Identify API] Error migrating trips:', tripMigrateError);
+      } else {
+        linkedTripsCount = migratedTrips?.length || 0;
+        if (linkedTripsCount > 0) {
+          console.log(`[Identify API] Successfully migrated ${linkedTripsCount} trip(s) to visitor ${visitorId}`);
+        } else {
+          console.log(`[Identify API] No trips found to migrate from anonymous visitor(s)`);
+        }
+      }
+    }
+
     const response = NextResponse.json({
       success: true,
       visitor_id: visitorId,
@@ -304,6 +359,7 @@ export async function POST(request: NextRequest) {
       linked: {
         chats: linkedChatsCount,
         views: linkedViewsCount,
+        trips: linkedTripsCount,
       },
     });
     
