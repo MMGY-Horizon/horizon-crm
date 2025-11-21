@@ -88,7 +88,7 @@ export default function SummaryMetrics() {
     {
       value: data.totalArticleClicks.toLocaleString(),
       label: 'Total Article Clicks',
-      sublabel: 'Clicks from Tavily search results'
+      sublabel: 'Clicks from search results'
     },
     {
       value: data.totalArticleViews.toLocaleString(),

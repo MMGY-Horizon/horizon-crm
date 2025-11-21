@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { authorizeRequest } from '@/lib/api-auth';
 import { getUserOrganization } from '@/lib/get-user-organization';
 
-// POST /api/tavily-mentions - Log Tavily search results as mentions
+// POST /api/article-mentions - Log article mentions from concierge
 export async function POST(request: NextRequest) {
   try {
     // Verify API key and get organization
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const mentionsToInsert = mentions.map((mention) => ({
       article_url: mention.url,
       article_title: mention.title,
-      article_type: 'tavily_search',
+      article_type: mention.type || 'article', // Dynamic type from mention, default to 'article'
       chat_id: chatId || null,
       session_id: sessionId,
       visitor_id: visitorId || null,
@@ -51,12 +51,12 @@ export async function POST(request: NextRequest) {
     }));
 
     const { data, error } = await supabaseAdmin
-      .from('tavily_mentions')
+      .from('article_mentions')
       .insert(mentionsToInsert)
       .select();
 
     if (error) {
-      console.error('Error inserting tavily mentions:', error);
+      console.error('Error inserting article mentions:', error);
       return NextResponse.json(
         { error: 'Failed to log mentions' },
         { status: 500 }
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       mentions: data
     });
   } catch (error: any) {
-    console.error('Error in POST /api/tavily-mentions:', error);
+    console.error('Error in POST /api/article-mentions:', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/tavily-mentions - Get all mentions with stats
+// GET /api/article-mentions - Get all mentions with stats
 export async function GET(request: NextRequest) {
   // Get user's organization
   const organizationId = await getUserOrganization();
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
     const chatId = params.get('chatId');
 
     let query = supabaseAdmin
-      .from('tavily_mentions')
+      .from('article_mentions')
       .select('*')
       .eq('organization_id', organizationId)
       .order('mentioned_at', { ascending: false });
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
     const { data: mentions, error } = await query;
 
     if (error) {
-      console.error('Error fetching tavily mentions:', error);
+      console.error('Error fetching article mentions:', error);
       return NextResponse.json(
         { error: 'Failed to fetch mentions' },
         { status: 500 }
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
       total: stats.length
     });
   } catch (error: any) {
-    console.error('Error in GET /api/tavily-mentions:', error);
+    console.error('Error in GET /api/article-mentions:', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

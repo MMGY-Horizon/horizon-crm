@@ -62,11 +62,12 @@ export async function GET(request: NextRequest) {
       console.error('Error counting visitors:', visitorsError);
     }
 
-    // Get article clicks (from tavily_mentions)
+    // Get article clicks (from article_mentions)
     const { data: clicksData, error: clicksError } = await supabaseAdmin
-      .from('tavily_mentions')
+      .from('article_mentions')
       .select('chat_id, session_id')
-      .eq('clicked', true);
+      .eq('clicked', true)
+      .eq('organization_id', organizationId);
 
     if (clicksError) {
       console.error('Error fetching clicks:', clicksError);

@@ -1,15 +1,17 @@
--- Create article_mentions table to track when articles appear in Tavily search results
+-- Create article_mentions table to track when articles appear in search results
 CREATE TABLE IF NOT EXISTS public.article_mentions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   article_url TEXT NOT NULL,
   article_title TEXT,
-  article_type TEXT,
+  article_type TEXT DEFAULT 'article',
   chat_id TEXT REFERENCES public.chats(chat_id) ON DELETE CASCADE,
   session_id TEXT NOT NULL,
   visitor_id UUID REFERENCES public.visitors(id) ON DELETE SET NULL,
+  search_query TEXT,
   mentioned_at TIMESTAMPTZ DEFAULT NOW(),
   clicked BOOLEAN DEFAULT FALSE,
   clicked_at TIMESTAMPTZ,
+  organization_id UUID NOT NULL REFERENCES public.organization_settings(id) ON DELETE CASCADE,
   metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -21,3 +23,4 @@ CREATE INDEX IF NOT EXISTS idx_article_mentions_session_id ON public.article_men
 CREATE INDEX IF NOT EXISTS idx_article_mentions_visitor_id ON public.article_mentions(visitor_id);
 CREATE INDEX IF NOT EXISTS idx_article_mentions_mentioned_at ON public.article_mentions(mentioned_at DESC);
 CREATE INDEX IF NOT EXISTS idx_article_mentions_clicked ON public.article_mentions(clicked);
+CREATE INDEX IF NOT EXISTS idx_article_mentions_organization_id ON public.article_mentions(organization_id);

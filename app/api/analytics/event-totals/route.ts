@@ -81,17 +81,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all article clicks from tavily_mentions (where clicked = true)
-    const { data: tavilyClicks, error: tavilyError } = await supabaseAdmin
-      .from('tavily_mentions')
-      .select('clicked_at')
+    // Get all article clicks from article_mentions (where clicked = true)
+    const { data: articleClicks, error: clicksError } = await supabaseAdmin
+      .from('article_mentions')
+      .select('mentioned_at')
       .eq('clicked', true)
-      .gte('clicked_at', startDate.toISOString());
+      .eq('organization_id', organizationId)
+      .gte('mentioned_at', startDate.toISOString());
 
-    if (tavilyError) {
-      console.error('Error fetching tavily clicks:', tavilyError);
+    if (clicksError) {
+      console.error('Error fetching article clicks:', clicksError);
       return NextResponse.json(
-        { error: 'Failed to fetch tavily clicks data' },
+        { error: 'Failed to fetch article clicks data' },
         { status: 500 }
       );
     }
@@ -126,10 +127,10 @@ export async function GET(request: NextRequest) {
       value: messagesByDate.get(date) || 0,
     }));
 
-    // Process article clicks per day (from tavily_mentions)
+    // Process article clicks per day (from article_mentions)
     const clicksByDate = new Map<string, number>();
-    tavilyClicks?.forEach((click) => {
-      const date = formatDate(new Date(click.clicked_at));
+    articleClicks?.forEach((click) => {
+      const date = formatDate(new Date(click.mentioned_at));
       clicksByDate.set(date, (clicksByDate.get(date) || 0) + 1);
     });
 

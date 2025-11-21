@@ -58,11 +58,12 @@ export async function GET(request: NextRequest) {
       console.error('Error counting visitors:', visitorsError);
     }
 
-    // Get total article clicks (from tavily_mentions) - skipping org filter for now
+    // Get total article clicks (from article_mentions)
     const { count: totalArticleClicks, error: clicksError } = await supabaseAdmin
-      .from('tavily_mentions')
+      .from('article_mentions')
       .select('*', { count: 'exact', head: true })
-      .eq('clicked', true);
+      .eq('clicked', true)
+      .eq('organization_id', organizationId);
 
     if (clicksError) {
       console.error('Error counting article clicks:', clicksError);

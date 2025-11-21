@@ -21,7 +21,7 @@ export default function CrawlerPage() {
   const fetchMentions = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/tavily-mentions');
+      const response = await fetch('/api/article-mentions');
       if (response.ok) {
         const data = await response.json();
         setMentions(data.mentions || []);
@@ -163,7 +163,7 @@ export default function CrawlerPage() {
               {filteredMentions.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-600">
-                    No article mentions found. Mentions will appear here when the Concierge returns Tavily search results.
+                    No article mentions found. Mentions will appear here when the Concierge returns search results.
                   </td>
                 </tr>
               ) : (
