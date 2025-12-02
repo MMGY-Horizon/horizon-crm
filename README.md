@@ -186,7 +186,22 @@ See `supabase/schema.sql` for the complete schema.
 
 See [`docs/CRM_INTEGRATION.md`](./docs/CRM_INTEGRATION.md) for complete API contract and examples.
 
+## Horizon Ecosystem
+
+This CRM is part of the larger Horizon platform. See the main project README for the complete ecosystem overview.
+
+**Related Components:**
+- **Concierge Frontend** (`/`) - Public-facing AI concierge that logs to this CRM
+- **Drupal CMS** (`/horizon-drupal-project`) - Headless CMS with AI content generation
+
 ## Recent Improvements
+
+### December 2024 Updates
+
+✅ **Ecosystem Integration**
+- Part of complete Horizon platform with Concierge and Drupal CMS
+- Centralized chat logging from multiple sources
+- Unified analytics across all touchpoints
 
 ### November 2024 Updates
 
