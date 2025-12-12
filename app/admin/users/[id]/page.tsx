@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MessageSquare, Eye, Mail, Calendar, RefreshCw, ChevronDown, ChevronRight, User, Bot, Briefcase, MapPin, Linkedin, Building2, Globe } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Eye, Mail, Calendar, RefreshCw, ChevronDown, ChevronRight, User, Bot, Briefcase, MapPin, Linkedin, Building2, Globe, Heart, Sun, Users, Sparkles } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 import TripsSection from '@/components/admin/TripsSection';
 
@@ -28,6 +28,13 @@ interface Visitor {
   company_industry: string | null;
   apollo_enriched_at: string | null;
   apollo_last_synced_at: string | null;
+  // Travel preferences
+  metadata: {
+    season?: string;
+    travelerType?: string;
+    preferences?: string[];
+    vibes?: string[];
+  } | null;
 }
 
 interface Chat {
@@ -371,6 +378,80 @@ export default function UserDetailPage() {
               )}
             </div>
             )}
+          </div>
+        )}
+
+        {/* Travel Preferences */}
+        {user.metadata && (user.metadata.season || user.metadata.travelerType || user.metadata.preferences?.length || user.metadata.vibes?.length) && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+              <Heart className="h-5 w-5 text-rose-500" />
+              Travel Preferences
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Season & Traveler Type */}
+              <div className="space-y-4">
+                {user.metadata.season && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sun className="h-4 w-4 text-amber-500" />
+                      <h3 className="text-sm font-semibold text-gray-700">Preferred Season</h3>
+                    </div>
+                    <span className="inline-flex px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+                      {user.metadata.season}
+                    </span>
+                  </div>
+                )}
+
+                {user.metadata.travelerType && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-blue-500" />
+                      <h3 className="text-sm font-semibold text-gray-700">Traveler Type</h3>
+                    </div>
+                    <span className="inline-flex px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                      {user.metadata.travelerType}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Vibes & Preferences */}
+              <div className="space-y-4">
+                {user.metadata.vibes && user.metadata.vibes.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="h-4 w-4 text-purple-500" />
+                      <h3 className="text-sm font-semibold text-gray-700">Vibes</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {user.metadata.vibes.map((vibe, idx) => (
+                        <span key={idx} className="inline-flex px-3 py-1.5 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                          {vibe}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {user.metadata.preferences && user.metadata.preferences.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Heart className="h-4 w-4 text-rose-500" />
+                      <h3 className="text-sm font-semibold text-gray-700">Interests</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {user.metadata.preferences.map((pref, idx) => (
+                        <span key={idx} className="inline-flex px-3 py-1.5 rounded-full text-sm font-medium bg-rose-100 text-rose-800">
+                          {pref}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
