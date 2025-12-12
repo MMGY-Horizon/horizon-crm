@@ -381,14 +381,24 @@ export default function UserDetailPage() {
           </div>
         )}
 
-        {/* Travel Preferences */}
-        {user.metadata && (user.metadata.season || user.metadata.travelerType || user.metadata.preferences?.length || user.metadata.vibes?.length) && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <Heart className="h-5 w-5 text-rose-500" />
-              Travel Preferences
-            </h2>
+        {/* Travel Preferences - Always show, even if empty */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+            <Heart className="h-5 w-5 text-rose-500" />
+            Travel Preferences
+          </h2>
 
+          {!user.metadata || (!user.metadata.season && !user.metadata.travelerType && !user.metadata.preferences?.length && !user.metadata.vibes?.length) ? (
+            <div className="text-center py-8">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-3">
+                <Heart className="h-6 w-6 text-gray-400" />
+              </div>
+              <p className="text-sm text-gray-600 mb-1">No preferences captured yet</p>
+              <p className="text-xs text-gray-500">
+                Preferences will appear here when the visitor provides their email through newsletter signup or guide email.
+              </p>
+            </div>
+          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Season & Traveler Type */}
               <div className="space-y-4">
@@ -452,8 +462,8 @@ export default function UserDetailPage() {
                 )}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
