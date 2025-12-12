@@ -29,14 +29,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { email, session_id, chat_id, source, visitor_id } = await request.json();
+    const { email, session_id, chat_id, source, visitor_id, metadata } = await request.json();
 
     console.log('[Identify API] Request received:', {
       email,
       session_id,
       chat_id,
       visitor_id,
-      source
+      source,
+      metadata
     });
 
     if (!email) {
@@ -64,34 +65,33 @@ export async function POST(request: NextRequest) {
         existingVisitor = visitor;
         foundBySession = true; // Treat as "found by session" since it's the same browsing session
         
-        // Update email if changed
+        // Update email and metadata if changed
+        const updateData: any = {
+          last_active_at: new Date().toISOString(),
+        };
+
         if (existingVisitor.email !== email) {
           console.log(`Updating email for visitor ${visitor_id}: ${existingVisitor.email} -> ${email}`);
-          const { data: updatedVisitor, error: updateError } = await supabaseAdmin
-            .from('visitors')
-            .update({
-              email: email,
-              last_active_at: new Date().toISOString(),
-            })
-            .eq('id', existingVisitor.id)
-            .select()
-            .single();
+          updateData.email = email;
+        }
 
-          if (!updateError) {
-            existingVisitor = updatedVisitor;
-          } else {
-            console.error('Error updating visitor email:', updateError);
-          }
+        // Merge metadata if provided
+        if (metadata) {
+          const existingMetadata = existingVisitor.metadata || {};
+          updateData.metadata = { ...existingMetadata, ...metadata };
+        }
+
+        const { data: updatedVisitor, error: updateError } = await supabaseAdmin
+          .from('visitors')
+          .update(updateData)
+          .eq('id', existingVisitor.id)
+          .select()
+          .single();
+
+        if (!updateError) {
+          existingVisitor = updatedVisitor;
         } else {
-          // Just update last_active_at
-          const { error: updateError } = await supabaseAdmin
-            .from('visitors')
-            .update({ last_active_at: new Date().toISOString() })
-            .eq('id', existingVisitor.id);
-
-          if (updateError) {
-            console.error('Error updating visitor last_active_at:', updateError);
-          }
+          console.error('Error updating visitor:', updateError);
         }
       }
     }
@@ -144,15 +144,26 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // If found by session and email changed, update it
-      if (existingVisitor && foundBySession && existingVisitor.email !== email) {
-        console.log(`Updating email for session ${session_id}: ${existingVisitor.email} -> ${email}`);
+      // If found by session, update email and metadata if needed
+      if (existingVisitor && foundBySession) {
+        const updateData: any = {
+          last_active_at: new Date().toISOString(),
+        };
+
+        if (existingVisitor.email !== email) {
+          console.log(`Updating email for session ${session_id}: ${existingVisitor.email} -> ${email}`);
+          updateData.email = email;
+        }
+
+        // Merge metadata if provided
+        if (metadata) {
+          const existingMetadata = existingVisitor.metadata || {};
+          updateData.metadata = { ...existingMetadata, ...metadata };
+        }
+
         const { data: updatedVisitor, error: updateError } = await supabaseAdmin
           .from('visitors')
-          .update({
-            email: email,
-            last_active_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq('id', existingVisitor.id)
           .select()
           .single();
@@ -160,7 +171,7 @@ export async function POST(request: NextRequest) {
         if (!updateError) {
           existingVisitor = updatedVisitor;
         } else {
-          console.error('Error updating visitor email:', updateError);
+          console.error('Error updating visitor:', updateError);
         }
       }
     }
@@ -195,12 +206,21 @@ export async function POST(request: NextRequest) {
         // Already updated in session check, just use the id
         visitorId = existingVisitor.id;
       } else {
-        // Update last_active_at for visitor found by email
+        // Update last_active_at and metadata for visitor found by email
+        const updateData: any = {
+          last_active_at: new Date().toISOString(),
+        };
+
+        // Merge metadata if provided
+        if (metadata) {
+          // If existing visitor has metadata, merge with new metadata
+          const existingMetadata = existingVisitor.metadata || {};
+          updateData.metadata = { ...existingMetadata, ...metadata };
+        }
+
         const { data: updatedVisitor, error: updateError } = await supabaseAdmin
           .from('visitors')
-          .update({
-            last_active_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq('id', existingVisitor.id)
           .select()
           .single();
@@ -219,14 +239,21 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Create new visitor
+      const visitorData: any = {
+        email,
+        source: source || 'newsletter',
+        last_active_at: new Date().toISOString(),
+        organization_id: auth.organizationId,
+      };
+
+      // Add metadata if provided
+      if (metadata) {
+        visitorData.metadata = metadata;
+      }
+
       const { data: newVisitor, error: insertError } = await supabaseAdmin
         .from('visitors')
-        .insert({
-          email,
-          source: source || 'newsletter',
-          last_active_at: new Date().toISOString(),
-          organization_id: auth.organizationId,
-        })
+        .insert(visitorData)
         .select()
         .single();
 
