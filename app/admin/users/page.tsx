@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { RefreshCw, Mail, Calendar } from 'lucide-react';
+import { RefreshCw, Mail, Calendar, Users } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 import Toast from '@/components/Toast';
 
@@ -20,6 +20,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<Visitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [enriching, setEnriching] = useState(false);
+  const [deduplicating, setDeduplicating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -87,6 +88,50 @@ export default function UsersPage() {
     }
   };
 
+  const deduplicateVisitors = async () => {
+    setDeduplicating(true);
+    try {
+      const response = await fetch('/api/visitors/deduplicate', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Deduplication results:', data);
+
+        // Refresh the user list after deduplication
+        await fetchUsers();
+
+        // Show success toast
+        if (data.merged === 0) {
+          setToast({
+            message: 'No duplicate visitors found!',
+            type: 'success',
+          });
+        } else {
+          setToast({
+            message: `Successfully merged ${data.merged} email groups (deleted ${data.deleted} duplicate records)`,
+            type: 'success',
+          });
+        }
+      } else {
+        const error = await response.json();
+        setToast({
+          message: `Deduplication failed: ${error.error}`,
+          type: 'error',
+        });
+      }
+    } catch (error) {
+      console.error('Error deduplicating visitors:', error);
+      setToast({
+        message: 'Failed to deduplicate visitors. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      setDeduplicating(false);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -122,14 +167,24 @@ export default function UsersPage() {
               Track and view all visitors using the concierge app
             </p>
           </div>
-          <button
-            onClick={enrichUnenrichedVisitors}
-            disabled={loading || enriching}
-            className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
-            title="Enrich unenriched visitors with Apollo data"
-          >
-            <RefreshCw className={`h-5 w-5 ${enriching ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={deduplicateVisitors}
+              disabled={loading || deduplicating || enriching}
+              className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
+              title="Merge duplicate visitor records with same email"
+            >
+              <Users className={`h-5 w-5 ${deduplicating ? 'animate-pulse' : ''}`} />
+            </button>
+            <button
+              onClick={enrichUnenrichedVisitors}
+              disabled={loading || enriching || deduplicating}
+              className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
+              title="Enrich unenriched visitors with Apollo data"
+            >
+              <RefreshCw className={`h-5 w-5 ${enriching ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {/* Search */}
