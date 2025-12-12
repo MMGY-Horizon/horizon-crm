@@ -7,6 +7,7 @@ import UserActivityCharts from '@/components/charts/UserActivityCharts';
 import EventTotalsCharts from '@/components/charts/EventTotalsCharts';
 import SummaryMetrics from '@/components/charts/SummaryMetrics';
 import ConversionRates from '@/components/charts/ConversionRates';
+import InterestsCharts from '@/components/charts/InterestsCharts';
 import WelcomePage from '@/components/WelcomePage';
 
 export default function AdminDashboard() {
@@ -57,6 +58,9 @@ export default function AdminDashboard() {
 
       {/* Main Content */}
       <div className="p-8 space-y-8">
+        {/* Visitor Interests & Preferences */}
+        <InterestsCharts />
+
         {/* User Composition Section */}
         <UserCompositionCharts />
 
